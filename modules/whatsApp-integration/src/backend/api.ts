@@ -27,7 +27,7 @@ export default async (bp: typeof sdk) => {
     baseURL: 'https://graph.facebook.com/v15.0/114392358180996',
     headers: {
       'content-type': 'application/json',
-      'Authorization': 'Bearer EAAMqZC1mdllcBAApraQ9SNvPTV8sFRZCk76yhTZBQIe1p57sXn2LGt1f3rbwDDLAJJZAYZA5oSHCgzlgTw0gEPAGXr2uDoZCGTezcksimUIeyfSVxJg5rTZAAwrszaXBwEiAaMkmieDdZCCcrqcDWU0xo3Wm8zDLzQTo1mHKX8zbwMZCAMSqmAATC'
+      'Authorization': 'Bearer EAAMqZC1mdllcBAAUoJN5uGbUuilRcRLJrcI1D2ZC4E58eVZCc8ctgNStmBbfRabZBpYqJHTRpB2B95CMcAhK4Q6HRw8beW3JjWMohp2rd4EakPxZB4xloUkmmFZCorebupj5x9GOvWWrly5UpTvXnc118qEF9dgKdMMXYQhm2CG9ZA5hWPe8JJJDlbG1CucICes7scdzG7cdgZDZD'
     }
    })
    //console.log(axiosInstance)
