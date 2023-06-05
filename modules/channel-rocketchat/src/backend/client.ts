@@ -2,6 +2,8 @@ import { driver, methodCache, api } from '@rocket.chat/sdk'
 //import Promise from "bluebird";
 
 import * as sdk from 'botpress/sdk'
+import { asyncMiddleware, asyncMiddleware as asyncMw, BPRequest } from 'common/http'
+import { Request, Response, NextFunction } from 'express'
 import _ from 'lodash'
 
 import { Config } from '../config'
@@ -14,6 +16,11 @@ const debugOutgoing = debug.sub('outgoing')
 const outgoingTypes = ['text', 'image', 'carousel', 'card']
 
 const axios = require('axios')
+const bodyParser = require('body-parser')
+const express = require('express')
+const app = express()
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 // userCache = new LRU({ max: 1000, maxAge: ms('1h') })
 
 export class RocketChatClient {
@@ -28,26 +35,25 @@ export class RocketChatClient {
 
   constructor(private bp: typeof sdk, private botId: string, private config: Config, private router) {
     this.logger = bp.logger.forBot(botId)
-    this.connected = false;
+    this.connected = false
   }
 
   async connect() {
-
-    this.connected = false;
+    this.connected = false
     // split channe string
     function handleChannel(channelList) {
       if (channelList !== undefined) {
         //channelList = channelList.replace(/[^\w\,._]/gi, "").toLowerCase();
-        channelList = channelList.toLowerCase();
-        if (channelList.match(",")) {
-          channelList = channelList.split(",");
-        } else if (channelList !== "") {
-          channelList = [channelList];
+        channelList = channelList.toLowerCase()
+        if (channelList.match(',')) {
+          channelList = channelList.split(',')
+        } else if (channelList !== '') {
+          channelList = [channelList]
         } else {
-          channelList = [];
+          channelList = []
         }
       }
-      return channelList;
+      return channelList
     }
 
     try {
@@ -55,81 +61,126 @@ export class RocketChatClient {
       this.connection = await driver.connect({
         host: this.config.rocketChatUrl,
         useSsl: this.config.rocketChatUseSSL
-      });
-      console.log('Connected to Rocket.Chat at ' + this.config.rocketChatUrl);
+      })
+      console.log('Connected to Rocket.Chat at ' + this.config.rocketChatUrl)
       // login as Rocket.Chat bot user
       this.user = await driver.login({
         username: this.config.rocketChatBotUser,
         password: this.config.rocketChatBotPassword
-      });
-      console.log('Logged in Rocket.Chat as ' + this.config.rocketChatBotUser);
+      })
+      console.log('Logged in Rocket.Chat as ' + this.config.rocketChatBotUser)
       // join to Rocket.Chat rooms
-      this.roomList = handleChannel(this.config.rocketChatRoom);
-      this.roomsJoined = await driver.joinRooms(this.roomList);
-      console.log('BOT User ' + this.config.rocketChatBotUser + ' joined rooms ' + this.config.rocketChatRoom);
+      this.roomList = handleChannel(this.config.rocketChatRoom)
+      this.roomsJoined = await driver.joinRooms(this.roomList)
+      console.log('BOT User ' + this.config.rocketChatBotUser + ' joined rooms ' + this.config.rocketChatRoom)
       // subscribe to messages
-      this.subscribed = await driver.subscribeToMessages();
-      console.log('subscribed to Rocket.Chat messages');
+      this.subscribed = await driver.subscribeToMessages()
+      console.log('subscribed to Rocket.Chat messages')
       // sent greeting message to each room
       for (const room of this.roomList) {
-        const sent = await driver.sendToRoom(this.config.rocketChatBotUser + ' is listening you ...', room);
+        const sent = await driver.sendToRoom(this.config.rocketChatBotUser + ' is listening you ...', room)
       }
-      this.connected = true;
+      this.connected = true
     } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   }
 
-
-  // listen to messages  from Rocket.Chat 
+  // listen to messages  from Rocket.Chat
   async listen() {
-
     const self = this
 
     // Rocket.Chat receive function
-    const receiveRocketChatMessages = async function (err, message, meta) {
-      try {
-        if (!err) {
-          // If message have .t so it's a system message, so ignore it
-          if (message.t === undefined) {
+    // const receiveRocketChatMessages = async function(err, message, meta, bp: typeof sdk) {
+    // eslint-disable-next-line no-console
+    console.log('entering in try block')
+    // try {
+    console.log('calling listen api')
 
-            const userId = message.u._id;
-            const user = await self.bp.users.getOrCreateUser(message.rid, userId);
+    const router = self.bp.http.createRouterForBot('channel-rocketchat', {
+      checkAuthentication: false,
+      enableJsonBodyParser: true
+    })
 
-            debugIncoming('Receiving message %o', message)
-            debugIncoming('User %o', user)
+    const asyncMiddleware = asyncMw(self.bp.logger)
 
-            const apiResponse = await axios.get('https://reqres.in/api/users/2');
-            console.log("API  CUSTOM CALL..", apiResponse.data);
+    console.log('router', router)
+    router.get('/', (req, res) => {
+      console.log('/')
+      res.status(200).send('Server has setup')
+    })
 
-            await self.bp.events.sendEvent(
-              self.bp.IO.Event({
-                //id: message.ts.$date.toString(),
-                botId: self.botId,
-                channel: 'rocketchat',
-                direction: 'incoming',
-                payload: { text: message.msg, user_info: user },
-                type: 'text',
-                preview: message.msg,
-                target: message.rid
-              })
-            )
-          }
+    router.get('/testing', async (req, res) => {
+      console.log('/listens')
+      res.send({ Hello: 'Testing' })
+    })
+
+    router.post(
+      '/listen',
+      asyncMiddleware(async (req: Request, res: Response) => {
+        // Parse the request body from the POST
+        // Check the Incoming webhook message
+        // console.log(JSON.stringify(req.body, null, 2))
+        const datas = {
+          name: 'Utkarsh',
+          job: 'SDE'
         }
-      } catch (error) {
-        console.log(error)
-      }
-    }
+        // const axiosConfig = await bp.http.getAxiosConfigForBot('basic-bot-01', { studioUrl: true })
 
-    console.log('Listening to Rocket.Chat messages ... ')
-    const options = {
-      dm: true,
-      livechat: true,
-      edited: true
-    }
+        axios({
+          method: 'POST', // Required, HTTP method, a string, e.g. POST, GET
+          url: 'https://reqres.in/api/users',
+          data: datas,
+          headers: { 'Content-Type': 'application/json' }
+          // eslint-disable-next-line no-console
+        })
+          .then(response => {
+            console.log('listen api response', JSON.stringify(response.data))
+            res.sendStatus(201)
+          })
+          .catch(error => {
+            console.log('listen api error', error)
+            res.sendStatus(500)
+          })
+        console.log('listen api response')
+      })
+    )
+    //if (!err) {
+    // If message have .t so it's a system message, so ignore it
+    //       if (message.t === undefined) {
+    //         const userId = message.u._id
+    //         const user = await self.bp.users.getOrCreateUser(message.rid, userId)
 
-    return driver.respondToMessages(receiveRocketChatMessages, options)
+    //         debugIncoming('Receiving message %o', message)
+    //         debugIncoming('User %o', user)
+    //         console.log('inside receiveRocketChatMessages')
+    //         await self.bp.events.sendEvent(
+    //           self.bp.IO.Event({
+    //             //id: message.ts.$date.toString(),
+    //             botId: self.botId,
+    //             channel: 'web',
+    //             direction: 'incoming',
+    //             payload: { text: message.msg, user_info: user },
+    //             type: 'text',
+    //             preview: message.msg,
+    //             target: message.rid
+    //           })
+    //         )
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.log(error)
+    //   }
+    // }
 
+    // console.log('Listening to Rocket.Chat messages ... ')
+    // const options = {
+    //   dm: true,
+    //   livechat: true,
+    //   edited: true
+    // }
+
+    //return driver.respondToMessages(receiveRocketChatMessages, options)
   }
 
   isConnected() {
@@ -141,140 +192,50 @@ export class RocketChatClient {
     await driver.disconnect()
   }
 
-
-
-
   // send message from Botpress to Rocket.Chat
   sendMessageToRocketChat(event) {
-    const myAction = async (event) => {
+    console.log('event: ', event)
+
+    const myAction = async event => {
       const data = JSON.stringify({
         text: 'Hello, Utkarsh',
         type: 'text',
         phone_number_id: '108603772099729',
-        from: '15550227728',
+        from: '15550227728'
       })
-      let config = {
+      const config = {
         method: 'post',
         maxBodyLength: Infinity,
         url: 'http://localhost:3002/webhook',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer EAARB9ujTATsBAI6FdGtBXvgumwP9CczWZAxj44azSZBE2ZBZCdB9FZCRz2NgQxabtEDC3qQmXBN3FjBTGfCKosLWnEAQp88tRo5cCeBojJhpDV2LsapAxTzFFeOT2pACnAeCDijim8DlZAJP6FKCCXuucZBjvSIXsXZBdyQZA2XhZBtZAjPuxRuVCzwCFHQ3n834ZCIRU8HxzLVlvZCgdUgiDZAPEHCZBvsCGNzP0kZD',
+          Authorization:
+            'Bearer EAARB9ujTATsBAFW4hAFwhBch1yIzZBoy2JjhuN0ShJZA7lMRYnIf0RCdlIOlEPhWuy1xN3j7ZCrGtArn663b21u9wIXZAocBt80leZCBFdDooXOwS3DgZCgoIXKZA3CP8jtVZBq51Ixm25AOlIMHp2qxZA3TZAjvmGYvBKeFUiQS2uyAI6qz5IandpbiZBSqHcSkWNdfvyZB2KrZCo24pGErTeCrSnAxHqdX2k0gZD'
         },
-        data: data,
+        data
       }
 
-      const waRes = axios.request(config)
-        .then((response) => {
+      console.log('config for nodeJS API: ', config)
+
+      const waRes = axios
+        .request(config)
+        .then(response => {
           console.log(JSON.stringify(response.data))
         })
-        .catch((error) => {
+        .catch(error => {
           console.log(error)
         })
       const currentData = waRes.data
       return currentData
     }
     return myAction(event)
-
-    debugOutgoing('Sending event %o', event)
-    console.log("Sending event %o", event);
-
-    const msg = event.payload.text;
-    const channelId = event.threadId || event.target;
-    const messageType = event.type === 'default' ? 'text' : event.type
-// tes
-    /*
-        const blocks = []
-        if (messageType === 'image' || messageType === 'actions') {
-          blocks.push(event.payload)
-        } else if (messageType === 'carousel') {
-          event.payload.cards.forEach(card => blocks.push(...card))
-        }
-       console.log("BLOCKS %o", blocks);
-    */
-
-    // TODO - different call to fit rocketChat message type 
-    /*
-        https://rocket.chat/docs/developer-guides/rest-api/chat/postmessage/
-        api.post('chat.postMessage', data[, auth, ignore])
-        
-    
-        data = {
-          "alias": "Gruggy",
-          "avatar": "http://res.guggy.com/logo_128.png",
-          "channel": "#general",
-          "emoji": ":smirk:",
-          "roomId": "Xnb2kLD2Pnhdwe3RH",
-          "text": "Sample message",
-          "attachments": [
-            {
-              "audio_url": "http://www.w3schools.com/tags/horse.mp3",
-              "author_icon": "https://avatars.githubusercontent.com/u/850391?v=3",
-              "author_link": "https://rocket.chat/",
-              "author_name": "Bradley Hilton",
-              "collapsed": false,
-              "color": "#ff0000",
-              "fields": [
-                {
-                  "short": true,
-                  "title": "Test",
-                  "value": "Testing out something or other"
-                },
-                {
-                  "short": true,
-                  "title": "Another Test",
-                  "value": "[Link](https://google.com/) something and this and that."
-                }
-              ],
-              "image_url": "http://res.guggy.com/logo_128.png",
-              "message_link": "https://google.com",
-              "text": "Yay for gruggy!",
-              "thumb_url": "http://res.guggy.com/logo_128.png",
-              "title": "Attachment Example",
-              "title_link": "https://youtube.com",
-              "title_link_download": true,
-              "ts": "2016-12-09T16:53:06.761Z",
-              "video_url": "http://www.w3schools.com/tags/movie.mp4"
-            }
-          ]
-        }
-    */
-    return driver.sendToRoom(msg, channelId);
-
   }
-
-  //   async myAction(event) {
-  //     const data = JSON.stringify({
-  //       text:'Hello Utkarsh',
-  //       type: 'text',
-  //        phone_number_id: '108603772099729',
-  //        from: '15550227728',
-  //     })
-  //     let config = {
-  //       method: 'post',
-  //       maxBodyLength: Infinity,
-  //       url: 'http://localhost:3002/webhook',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'Authorization': 'Bearer EAARB9ujTATsBAK9h47jw7UtfZBCZCnfaZB9n9QFS3OtHgiALUdxy2omJiKkZAU4Pmd5bVQZCFfVL7ZA5hsTZAIA7YmtoOLxDhL7kuN1lYHann1ya23xVvjhLWKQEW1l00KbMTOhzoHksVfmvzN8EOV5ZBtfodDdGD94ekDH22bpkO3pYWKEZA0zER41cFK6pSIZB07oAnkZA7JoMQZDZD'
-  //       },
-  //       data : data ,
-  //     }
-
-  //    const waRes =  axios.request(config)
-  //     .then((response) => {
-  //       console.log(JSON.stringify(response.data))
-  //     })
-  //     .catch((error) => {
-  //       console.log(error)
-  //     })
-  //     const currentData = waRes.data
-  //     return currentData
-  //   }
 
   // send messages from Botpress to Rocket.Chat
   async handleOutgoingEvent(event: sdk.IO.Event, next: sdk.IO.MiddlewareNextCallback) {
     // sending text
+    console.log('event.type: ', event.type)
+
     if (event.type === 'typing') {
       //await this.rtm.sendTyping(event.threadId || event.target)
       await new Promise(resolve => setTimeout(() => resolve(), 1000))
@@ -289,16 +250,11 @@ export class RocketChatClient {
     await this.sendMessageToRocketChat(event)
 
     next(undefined, false)
-
   }
-
-
 }
-
 
 // setup Middleware to send outgoing message from Botpress to Rochet.Chat
 export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
-
   bp.events.registerMiddleware({
     description: 'Sends messages to Rocket.Chat',
     direction: 'outgoing',
@@ -308,7 +264,8 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
   })
 
   async function outgoingHandler(event: sdk.IO.Event, next: sdk.IO.MiddlewareNextCallback) {
-    if (event.channel !== 'rocketchat') {
+    console.log('event.channel: ', event.channel)
+    if (event.channel !== 'web') {
       return next()
     }
 
@@ -319,6 +276,4 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
 
     return client.handleOutgoingEvent(event, next)
   }
-
 }
-

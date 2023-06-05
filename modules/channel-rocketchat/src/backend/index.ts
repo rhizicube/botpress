@@ -7,10 +7,10 @@ let router
 const clients: Clients = {}
 
 // This is called when server is started, usually to set up the database
-const onServerStarted = async (bp: typeof sdk) => {  
-    // from lack module
-    console.log('onserverStarted')
-    await setupMiddleware(bp, clients)
+const onServerStarted = async (bp: typeof sdk) => {
+  // from lack module
+  console.log('onserverStarted')
+  await setupMiddleware(bp, clients)
 }
 
 // At this point, you would likely setup the API route of your module.
@@ -50,7 +50,6 @@ const onBotUnmount = async (bp: typeof sdk, botId: string) => {
   await client.disconnect()
   delete clients[botId]
 }
-
 
 const entryPoint: sdk.ModuleEntryPoint = {
   onServerStarted,

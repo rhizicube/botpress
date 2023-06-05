@@ -16,7 +16,9 @@
     "package": "node ../../build/module-builder/bin/entry package"
   },
   "dependencies": {
-   "@rocket.chat/sdk": "^0.2.9"
+    "@rocket.chat/sdk": "^0.2.9",
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2"
   },
   "engines": {
     "node": "> 8.0.0",
@@ -25,5 +27,4 @@
   "resolutions": {
     "lodash": ">=4.17.12"
   }
-
 }
