@@ -4,6 +4,7 @@
   "description": "Rocket.Chat integration",
   "private": true,
   "main": "dist/backend/index.js",
+  "types": "types/common/wa.d.ts",
   "repository": {
     "url": "https://github.com/metsrl/channel-rocketchat",
     "type": "git"

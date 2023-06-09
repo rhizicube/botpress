@@ -122,8 +122,8 @@ export class RocketChatClient {
         // Check the Incoming webhook message
         // console.log(JSON.stringify(req.body, null, 2))
         const datas = {
-          name: 'Utkarsh',
-          job: 'SDE'
+          name: 'Rhizicube',
+          job: 'AI'
         }
         // const axiosConfig = await bp.http.getAxiosConfigForBot('basic-bot-01', { studioUrl: true })
 
@@ -145,42 +145,50 @@ export class RocketChatClient {
         console.log('listen api response')
       })
     )
-    //if (!err) {
-    // If message have .t so it's a system message, so ignore it
-    //       if (message.t === undefined) {
-    //         const userId = message.u._id
-    //         const user = await self.bp.users.getOrCreateUser(message.rid, userId)
 
-    //         debugIncoming('Receiving message %o', message)
-    //         debugIncoming('User %o', user)
-    //         console.log('inside receiveRocketChatMessages')
-    //         await self.bp.events.sendEvent(
-    //           self.bp.IO.Event({
-    //             //id: message.ts.$date.toString(),
-    //             botId: self.botId,
-    //             channel: 'web',
-    //             direction: 'incoming',
-    //             payload: { text: message.msg, user_info: user },
-    //             type: 'text',
-    //             preview: message.msg,
-    //             target: message.rid
-    //           })
-    //         )
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.log(error)
-    //   }
-    // }
 
-    // console.log('Listening to Rocket.Chat messages ... ')
-    // const options = {
-    //   dm: true,
-    //   livechat: true,
-    //   edited: true
-    // }
+    const receiveRocketChatMessages = async function (err, message: any) {
+      console.log('%%%%%%%%%%%%%%%%msg%%%%%%%%%%%%%%%%%%%', message)
+      if (!err) {
+        const userId = message.u_id
+        const user = self.bp.users.getOrCreateUser('GENERAL', userId)
+        debugIncoming('Receiving message %o', message)
+        debugIncoming('User %o', user)
 
-    //return driver.respondToMessages(receiveRocketChatMessages, options)
+        // Random API CALL:-
+        // const apiResponse = await axios.get('https://reqres.in/api/users/2')
+        console.log('API  CUSTOM CALL..')
+
+        self.bp.events.sendEvent(
+          self.bp.IO.Event({
+            //id: message.ts.$date.toString(),
+            botId: 'basic-bot-01',
+            channel: 'channel-rocketchat',
+            direction: 'incoming',
+            payload: { text: message.msg, user_info: user },
+            type: 'text',
+            // preview: message.msg,
+            target: message.rid
+          })
+        )
+
+        // router.post('/users', async (req, res) => {
+        //   const count = 0
+        // await self.sendMessageToRocketChat(eventTrigger)
+        //   res.status(201).json({ 'number': count })
+        // })
+        const options = {
+          dm: true,
+          livechat: false,
+          edited: true
+        }
+        // const message = { u_id: 'gKQNTX5zEeH4QAEfH', rid: 'GENERAL', msg: 'WORKING...................' }
+
+        return driver.respondToMessages(receiveRocketChatMessages, options)
+      }
+    }
+
+
   }
 
   isConnected() {
