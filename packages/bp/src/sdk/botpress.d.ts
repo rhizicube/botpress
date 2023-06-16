@@ -566,8 +566,8 @@ declare module 'botpress/sdk' {
 
       // pre-prediction
       readonly detectedLanguage:
-        | string
-        | undefined /** Language detected from users input. If undefined, detection failed. */
+      | string
+      | undefined /** Language detected from users input. If undefined, detection failed. */
       readonly language: string /** The language used for prediction */
       readonly includedContexts: string[]
       readonly ms: number
@@ -1756,11 +1756,11 @@ declare module 'botpress/sdk' {
 
   export interface Endpoint {
     channel:
-      | {
-          name: string
-          version: string
-        }
-      | string
+    | {
+      name: string
+      version: string
+    }
+    | string
     identity: string
     sender: string
     thread: string

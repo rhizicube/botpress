@@ -1,10 +1,13 @@
 import * as sdk from 'botpress/sdk'
 import { Config } from '../config'
+import api from './api'
 import { setupMiddleware, RocketChatClient } from './client'
 import { Clients } from './typings'
-
 let router
 const clients: Clients = {}
+
+let apiResponse: any
+let isBotConnected = false
 
 // This is called when server is started, usually to set up the database
 const onServerStarted = async (bp: typeof sdk) => {
@@ -22,6 +25,28 @@ const onServerReady = async (bp: typeof sdk) => {
     enableJsonBodyParser: false,
     enableUrlEncoderBodyParser: false
   })
+  bp.logger.info('calling api')
+  try {
+    // Call the API and store the response in the variable
+    const listenCallback = async (x: any) => {
+      // Call the listen function here
+      apiResponse = x
+      console.log('apiResponse: ', apiResponse)
+      // await onBotMount(bp, 'basic-bot-01')
+      if (!isBotConnected) {
+        await onBotMount(bp, 'basic-bot-01')
+      } else {
+        const bot = clients['basic-bot-01']
+        if (bot) {
+          await bot.listen(apiResponse)
+        }
+      }
+    }
+    void api(bp, listenCallback)
+    // await onBotMount(bp, 'basic-bot-01')
+  } catch (error) {
+    console.error('Error calling API:', error)
+  }
 }
 
 // Every time a bot is created (or enabled), this method will be called with the bot id
@@ -32,10 +57,15 @@ const onBotMount = async (bp: typeof sdk, botId: string) => {
   console.log('config')
   // if channel is enabled in bot config create Rocket.Chat client
   if (config.enabled) {
-    const bot = new RocketChatClient(bp, botId, config, router)
-    await bot.connect()
-    await bot.listen()
-    clients[botId] = bot
+    if (!isBotConnected) {
+      const bot = new RocketChatClient(bp, botId, config, router)
+      await bot.connect()
+      isBotConnected = true
+      clients[botId] = bot
+      if (apiResponse) {
+        await bot.listen(apiResponse)
+      }
+    }
   }
 }
 

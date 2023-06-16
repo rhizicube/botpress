@@ -16,6 +16,9 @@
     "watch": "node ../../build/module-builder/bin/entry watch",
     "package": "node ../../build/module-builder/bin/entry package"
   },
+  "devDependencies": {
+    "typescript": "^2.1.0"
+  },
   "dependencies": {
     "@rocket.chat/sdk": "^0.2.9",
     "body-parser": "^1.20.2",

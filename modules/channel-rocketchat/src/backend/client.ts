@@ -5,8 +5,8 @@ import * as sdk from 'botpress/sdk'
 import { asyncMiddleware, asyncMiddleware as asyncMw, BPRequest } from 'common/http'
 import { Request, Response, NextFunction } from 'express'
 import _ from 'lodash'
-
 import { Config } from '../config'
+import { respondToMessages } from './respond'
 import { Clients } from './typings'
 
 const debug = DEBUG('channel-rocketchat')
@@ -87,67 +87,36 @@ export class RocketChatClient {
   }
 
   // listen to messages  from Rocket.Chat
-  async listen() {
+  async listen(x) {
     const self = this
 
-    // Rocket.Chat receive function
-    // const receiveRocketChatMessages = async function(err, message, meta, bp: typeof sdk) {
-    // eslint-disable-next-line no-console
-    console.log('entering in try block')
-    // try {
-    console.log('calling listen api')
+    console.log('api response in listen: ', x)
 
-    const router = self.bp.http.createRouterForBot('channel-rocketchat', {
-      checkAuthentication: false,
-      enableJsonBodyParser: true
-    })
+    // Returns an existing user or create a new one with the specified keys
+    // export function getOrCreateUser(channel: string, userId: string, botId?: string): GetOrCreateResult<User>
 
-    const asyncMiddleware = asyncMw(self.bp.logger)
+    const userId = 'GENERAL'
+    const user = self.bp.users.getOrCreateUser('GENERAL', userId, 'basic-bot-01')
 
-    console.log('router', router)
-    router.get('/', (req, res) => {
-      console.log('/')
-      res.status(200).send('Server has setup')
-    })
-
-    router.get('/testing', async (req, res) => {
-      console.log('/listens')
-      res.send({ Hello: 'Testing' })
-    })
-
-    router.post(
-      '/listen',
-      asyncMiddleware(async (req: Request, res: Response) => {
-        // Parse the request body from the POST
-        // Check the Incoming webhook message
-        // console.log(JSON.stringify(req.body, null, 2))
-        const datas = {
-          name: 'Rhizicube',
-          job: 'AI'
-        }
-        // const axiosConfig = await bp.http.getAxiosConfigForBot('basic-bot-01', { studioUrl: true })
-
-        axios({
-          method: 'POST', // Required, HTTP method, a string, e.g. POST, GET
-          url: 'https://reqres.in/api/users',
-          data: datas,
-          headers: { 'Content-Type': 'application/json' }
-          // eslint-disable-next-line no-console
-        })
-          .then(response => {
-            console.log('listen api response', JSON.stringify(response.data))
-            res.sendStatus(201)
-          })
-          .catch(error => {
-            console.log('listen api error', error)
-            res.sendStatus(500)
-          })
-        console.log('listen api response')
+    self.bp.events.sendEvent(
+      self.bp.IO.Event({
+        //id: message.ts.$date.toString(),
+        botId: 'basic-bot-01',
+        channel: 'channel-rocketchat',
+        direction: 'incoming',
+        payload: { text: x.name, user_info: user },
+        type: 'text',
+        // preview: message.msg,
+        target: 'GENERAL'
       })
     )
 
 
-    const receiveRocketChatMessages = async function (err, message: any) {
+    // Rocket.Chat receive function
+    // eslint-disable-next-line no-console
+    console.log('entering in try block')
+    // try {
+    const receiveRocketChatMessages = async function (err, message, bp: typeof sdk) {
       console.log('%%%%%%%%%%%%%%%%msg%%%%%%%%%%%%%%%%%%%', message)
       if (!err) {
         const userId = message.u_id
@@ -171,25 +140,18 @@ export class RocketChatClient {
             target: message.rid
           })
         )
-
-        // router.post('/users', async (req, res) => {
-        //   const count = 0
-        // await self.sendMessageToRocketChat(eventTrigger)
-        //   res.status(201).json({ 'number': count })
-        // })
-        const options = {
-          dm: true,
-          livechat: false,
-          edited: true
-        }
-        // const message = { u_id: 'gKQNTX5zEeH4QAEfH', rid: 'GENERAL', msg: 'WORKING...................' }
-
-        return driver.respondToMessages(receiveRocketChatMessages, options)
       }
     }
 
+    const options = {
+      dm: true,
+      livechat: false,
+      edited: true
+    }
 
+    return driver.respondToMessages(receiveRocketChatMessages, options)
   }
+
 
   isConnected() {
     return this.connected
@@ -206,7 +168,7 @@ export class RocketChatClient {
 
     const myAction = async event => {
       const data = JSON.stringify({
-        text: 'Hello, Utkarsh',
+        text: event.payload.text,
         type: 'text',
         phone_number_id: '108603772099729',
         from: '15550227728'
@@ -218,7 +180,7 @@ export class RocketChatClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-            'Bearer EAARB9ujTATsBAFW4hAFwhBch1yIzZBoy2JjhuN0ShJZA7lMRYnIf0RCdlIOlEPhWuy1xN3j7ZCrGtArn663b21u9wIXZAocBt80leZCBFdDooXOwS3DgZCgoIXKZA3CP8jtVZBq51Ixm25AOlIMHp2qxZA3TZAjvmGYvBKeFUiQS2uyAI6qz5IandpbiZBSqHcSkWNdfvyZB2KrZCo24pGErTeCrSnAxHqdX2k0gZD'
+            'Bearer EAARB9ujTATsBAMaWVgsHTZCpdPK9gr15z2vTnSX7keT5DVRMZBP1EJGfk4LyIzRhSAFo8QFJRx84D86NyebgcuOHE2aDHIycR7emwN8BSXG5PyIJ3aOfsX74p3LoKb0URajnWGwAqhmkK6WQ2ZAxnbqeQcsuFV2cf31ZChcXFlPbOaW6VS0X7ZCzvmry1ZBPYr985YZANuSlQZDZD'
         },
         data
       }
@@ -273,7 +235,12 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
 
   async function outgoingHandler(event: sdk.IO.Event, next: sdk.IO.MiddlewareNextCallback) {
     console.log('event.channel: ', event.channel)
-    if (event.channel !== 'web') {
+
+    // console.log('conversationId....', event.threadId)
+    console.log('userId...', event.target)
+    console.log('messaging....', bp.messaging.forBot(event.botId))
+
+    if (event.channel !== 'channel-rocketchat') {
       return next()
     }
 
