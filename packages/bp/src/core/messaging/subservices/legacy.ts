@@ -7,11 +7,14 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 export class MessagingLegacy {
   private warned: { [botChannel: string]: boolean } = {}
 
-  constructor(private logger: sdk.Logger, private http: HTTPServer) {}
+  constructor(private logger: sdk.Logger, private http: HTTPServer) { }
 
   setup() {
     const messengerRouter = this.setupRouter(this.http, 'messenger')
     this.setupProxy(messengerRouter, 'messenger', '/webhook')
+
+    const customRouter = this.setupRouter(this.http, 'channel-rocketchat')
+    this.setupProxy(customRouter, 'channel-rocketchat', '/webhook')
 
     const slackRouter = this.setupRouter(this.http, 'slack')
     this.setupProxy(slackRouter, 'slack', '/bots/:botId/callback', '/interactive')
@@ -50,9 +53,8 @@ export class MessagingLegacy {
           const { botId } = req.params
 
           if (!this.warned[`${botId}-${channel}`]) {
-            const correctRoute = `${process.EXTERNAL_URL}/api/v1/messaging/webhooks/${botId}/${channel}${
-              messagingRoute ? messagingRoute : ''
-            }`
+            const correctRoute = `${process.EXTERNAL_URL}/api/v1/messaging/webhooks/${botId}/${channel}${messagingRoute ? messagingRoute : ''
+              }`
             this.logger.warn(
               `[${botId}] You are using a deprecated route for your channel ${channel} webhook. Please use this route instead : ${correctRoute}`
             )
@@ -61,9 +63,8 @@ export class MessagingLegacy {
 
           const search = new URL(req.originalUrl, process.EXTERNAL_URL).search
 
-          const newUrl = `${this.getMessagingUrl()}/webhooks/${botId}/${channel}${
-            messagingRoute ? messagingRoute : ''
-          }${search || ''}`
+          const newUrl = `${this.getMessagingUrl()}/webhooks/${botId}/${channel}${messagingRoute ? messagingRoute : ''
+            }${search || ''}`
 
           return newUrl
         },
@@ -80,3 +81,4 @@ export class MessagingLegacy {
       : `http://localhost:${process.MESSAGING_PORT}`
   }
 }
+// `http://localhost:${process.MESSAGING_PORT}`

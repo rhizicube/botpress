@@ -2,7 +2,7 @@ import * as sdk from 'botpress/sdk'
 import { Migration, MigrationOpts } from 'core/migration'
 
 const ROOT_FOLDER = './config'
-const CHANNELS = ['messenger', 'slack', 'smooch', 'teams', 'telegram', 'twilio', 'vonage'] as const
+const CHANNELS = ['messenger', 'slack', 'smooch', 'teams', 'telegram', 'twilio', 'vonage', 'channel-rocketchat'] as const
 
 type Channels = typeof CHANNELS[number]
 

@@ -157,7 +157,7 @@ async function start() {
 
   // These channels were removed on 12.24.0.
   // Do not display not found errors as migrations are run after loading modules and will fix those errors.
-  const removedChannels = ['messenger', 'teams', 'telegram', 'twilio', 'slack', 'smooch', 'vonage']
+  const removedChannels = ['messenger', 'teams', 'telegram', 'twilio', 'slack', 'smooch', 'vonage', 'channel-rocketchat']
   erroredModules = erroredModules.filter(m => !removedChannels.some(removed => m.entry.location.includes(removed)))
 
   for (const loadedModule of loadedModules) {
@@ -201,9 +201,9 @@ This is a fatal error, process will exit.`
 
   logger.info(
     `Using ${chalk.bold(loadedModules.length.toString())} modules` +
-      loadedModulesLog +
-      disabledModulesLog +
-      erroredModulesLog
+    loadedModulesLog +
+    disabledModulesLog +
+    erroredModulesLog
   )
 
   for (const { entry, err, message } of erroredModules) {

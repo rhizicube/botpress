@@ -96,18 +96,20 @@ export class RocketChatClient {
     // export function getOrCreateUser(channel: string, userId: string, botId?: string): GetOrCreateResult<User>
 
     const userId = 'GENERAL'
-    const user = self.bp.users.getOrCreateUser('GENERAL', userId, 'basic-bot-01')
+    const user = self.bp.users.getOrCreateUser('GENERAL', userId, this.botId)
 
     self.bp.events.sendEvent(
       self.bp.IO.Event({
-        //id: message.ts.$date.toString(),
-        botId: 'basic-bot-01',
+        // id: message.ts.$date.toString(),
+        // messageId: 'rhizicube',
+        botId: this.botId,
         channel: 'channel-rocketchat',
         direction: 'incoming',
         payload: { text: x.name, user_info: user },
         type: 'text',
-        // preview: message.msg,
-        target: 'GENERAL'
+        // preview: x.name,
+        target: 'GENERAL',
+
       })
     )
 
@@ -164,14 +166,25 @@ export class RocketChatClient {
 
   // send message from Botpress to Rocket.Chat
   sendMessageToRocketChat(event) {
+
+
+    // debugOutgoing('Sending event %o', event)
+    // console.log('Sending event %o', event)
+
+    // const msg = event.payload.text
+    // const channelId = event.threadId || event.target
+    // const messageType = event.type === 'default' ? 'text' : event.type
+
+    // return driver.sendToRoom(msg, channelId)
+
     console.log('event: ', event)
 
     const myAction = async event => {
       const data = JSON.stringify({
         text: event.payload.text,
         type: 'text',
-        phone_number_id: '108603772099729',
-        from: '15550227728'
+        phone_number_id: '114392358180996',
+        from: '15550449433'
       })
       const config = {
         method: 'post',
@@ -180,7 +193,7 @@ export class RocketChatClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-            'Bearer EAARB9ujTATsBAMaWVgsHTZCpdPK9gr15z2vTnSX7keT5DVRMZBP1EJGfk4LyIzRhSAFo8QFJRx84D86NyebgcuOHE2aDHIycR7emwN8BSXG5PyIJ3aOfsX74p3LoKb0URajnWGwAqhmkK6WQ2ZAxnbqeQcsuFV2cf31ZChcXFlPbOaW6VS0X7ZCzvmry1ZBPYr985YZANuSlQZDZD'
+            'Bearer EAAMqZC1mdllcBAJIGI5ZCZCW9FS4nQt2hmZCZCPSKOt1y8EIhx3kvY5ZBZC7ZBL4V9xZAP2CCvzTOJ4iH2ZBeAuiFzYfz0TJQf63NqvUjitqLkfkpYwfeZAYOOtm8zCsXZBf7fzIvvHt6rufM1SzPZBy1zSIYOMXMIcezEmQ4keCs1ZANTewpYgYbvR9S50imvkeoIIUxDKzSzElZBU1fZCFKW89eZBDce4Nk8CSy1F8ZD'
         },
         data
       }
@@ -237,8 +250,20 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
     console.log('event.channel: ', event.channel)
 
     // console.log('conversationId....', event.threadId)
-    console.log('userId...', event.target)
-    console.log('messaging....', bp.messaging.forBot(event.botId))
+    // console.log('userId...', event.target)
+    // console.log('messaging....', bp.messaging.forBot(event.botId))
+
+    // const userId = event.target
+    // const messaging = bp.messaging.forBot(event.botId)
+    // let conversationId = event.threadId
+    // const cId = ( ( messaging.createConversation(event.target))).then(data => console.log(data))
+
+
+    // const conversationId = bp.messaging.createConversation(event.target)
+
+
+    // console.log('conversationId....', conversationId)
+
 
     if (event.channel !== 'channel-rocketchat') {
       return next()

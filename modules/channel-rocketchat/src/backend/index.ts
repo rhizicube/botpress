@@ -6,8 +6,10 @@ import { Clients } from './typings'
 let router
 const clients: Clients = {}
 
+const botID = []
+
 let apiResponse: any
-let isBotConnected = false
+const isBotConnected = false
 
 // This is called when server is started, usually to set up the database
 const onServerStarted = async (bp: typeof sdk) => {
@@ -16,7 +18,6 @@ const onServerStarted = async (bp: typeof sdk) => {
   await setupMiddleware(bp, clients)
 }
 
-// At this point, you would likely setup the API route of your module.
 const onServerReady = async (bp: typeof sdk) => {
   console.log('onserverReady')
   // create a router to the bot
@@ -32,18 +33,24 @@ const onServerReady = async (bp: typeof sdk) => {
       // Call the listen function here
       apiResponse = x
       console.log('apiResponse: ', apiResponse)
-      // await onBotMount(bp, 'basic-bot-01')
-      if (!isBotConnected) {
-        await onBotMount(bp, 'basic-bot-01')
-      } else {
-        const bot = clients['basic-bot-01']
-        if (bot) {
-          await bot.listen(apiResponse)
-        }
+      const Bots = await bp.bots.getAllBots()
+      console.log('bots:', Bots)
+      for (const botId of Bots.keys()) {
+        botID.push(botId)
       }
+      console.log('botIds:', botID)
+      botID.forEach(async botId => {
+        const config = (await bp.config.getModuleConfigForBot('channel-rocketchat', botId, true)) as Config
+        console.log('config', botId)
+        if (config.enabled) {
+          const bot = clients[botId]
+          if (bot) {
+            await bot.listen(apiResponse)
+          }
+        }
+      })
     }
     void api(bp, listenCallback)
-    // await onBotMount(bp, 'basic-bot-01')
   } catch (error) {
     console.error('Error calling API:', error)
   }
@@ -57,15 +64,9 @@ const onBotMount = async (bp: typeof sdk, botId: string) => {
   console.log('config')
   // if channel is enabled in bot config create Rocket.Chat client
   if (config.enabled) {
-    if (!isBotConnected) {
-      const bot = new RocketChatClient(bp, botId, config, router)
-      await bot.connect()
-      isBotConnected = true
-      clients[botId] = bot
-      if (apiResponse) {
-        await bot.listen(apiResponse)
-      }
-    }
+    const bot = new RocketChatClient(bp, botId, config, router)
+    await bot.connect()
+    clients[botId] = bot
   }
 }
 

@@ -8,7 +8,7 @@ export class MessagingInteractor {
   public readonly client: MessagingChannel
   public readonly isExternal: boolean
 
-  private channelNames = ['messenger', 'slack', 'smooch', 'teams', 'telegram', 'twilio', 'vonage']
+  private channelNames = ['messenger', 'slack', 'smooch', 'teams', 'telegram', 'twilio', 'vonage', 'channel-rocketchat']
 
   constructor(private logger: Logger) {
     this.client = new MessagingChannel({ url: this.getMessagingUrl() })
