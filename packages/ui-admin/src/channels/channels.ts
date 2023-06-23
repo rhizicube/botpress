@@ -55,7 +55,7 @@ const telegram: ChannelMeta = {
   }
 }
 
-// const channel-rocketchat: ChannelMeta = {
+// const channelRocketchat: ChannelMeta = {
 //   v0: {
 //     fields: ['botToken']
 //   }
@@ -93,5 +93,5 @@ export const CHANNELS: { [channel: string]: ChannelMeta } = {
   telegram,
   twilio,
   vonage,
-  // channel- rocketchat
+  // channelRocketchat
 }

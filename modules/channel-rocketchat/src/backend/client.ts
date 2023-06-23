@@ -193,7 +193,7 @@ export class RocketChatClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-            'Bearer EAAMqZC1mdllcBAJIGI5ZCZCW9FS4nQt2hmZCZCPSKOt1y8EIhx3kvY5ZBZC7ZBL4V9xZAP2CCvzTOJ4iH2ZBeAuiFzYfz0TJQf63NqvUjitqLkfkpYwfeZAYOOtm8zCsXZBf7fzIvvHt6rufM1SzPZBy1zSIYOMXMIcezEmQ4keCs1ZANTewpYgYbvR9S50imvkeoIIUxDKzSzElZBU1fZCFKW89eZBDce4Nk8CSy1F8ZD'
+            'Bearer EAAMqZC1mdllcBAJvZBXZBaYYIOKPQZC5mYP3ZCUNR6e3EiOc1UvqjPItxZA3I2HFpcIiaNhYEE5JvcaLU1Yp6EGEfDFAts6k2uDHksuAuQNAZAsJ2FWT20QAc4tiZCnPuvCQqeSZC50Ma5ZAMy4qjYFI7LHDp87opQ1W7AtdSOZBSBQoZB0pIRl4DTvCHLVXYE9MaZCvmOKss6flJDQZDZD'
         },
         data
       }
