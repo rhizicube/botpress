@@ -14,7 +14,7 @@ const isBotConnected = false
 // This is called when server is started, usually to set up the database
 const onServerStarted = async (bp: typeof sdk) => {
   // from lack module
-  console.log('onserverStarted')
+
   await setupMiddleware(bp, clients)
 }
 
