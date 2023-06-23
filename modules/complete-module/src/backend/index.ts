@@ -1,36 +1,36 @@
 import * as sdk from 'botpress/sdk'
-
 import api from './api'
-
+import Database from './db'
+export type SDK = typeof sdk
+let dbs
 // This is called when server is started, usually to set up the database
-const onServerStarted = async (bp: typeof sdk) => {}
-
+const onServerStarted = async (bp: typeof sdk) => {
+  const db = new Database(bp)
+  dbs = db
+  bp.logger.info('Hi Im working')
+  //await db.initialize()
+}
 // At this point, you would likely setup the API route of your module.
 const onServerReady = async (bp: typeof sdk) => {
-  await api(bp)
+  bp.logger.info('calling api')
+  //  await api(bp, dbs)
 }
-
 // Every time a bot is created (or enabled), this method will be called with the bot id
 const onBotMount = async (bp: typeof sdk, botId: string) => {}
-
 // This is called every time a bot is deleted (or disabled)
 const onBotUnmount = async (bp: typeof sdk, botId: string) => {}
-
 // When anything is changed using the flow editor, this is called with the new flow, so you can rename nodes if you reference them
 const onFlowChanged = async (bp: typeof sdk, botId: string, flow: sdk.Flow) => {}
-
 /**
  * This is where you would include your 'demo-bot' definitions.
  * You can copy the content of any existing bot and mark them as "templates", so you can create multiple bots from the same template.
  */
 const botTemplates: sdk.BotTemplate[] = [{ id: 'my_bot_demo', name: 'Bot Demo', desc: 'Some description' }]
-
 /**
  * Skills allows you to create custom logic and use them easily on the flow editor
  * Check this link for more information: https://botpress.com/docs/developers/create-module/#skill-creation
  */
 const skills: sdk.Skill[] = []
-
 const entryPoint: sdk.ModuleEntryPoint = {
   onServerStarted,
   onServerReady,
@@ -41,7 +41,7 @@ const entryPoint: sdk.ModuleEntryPoint = {
   skills,
   definition: {
     // This must match the name of your module's folder, and the name in package.json
-    name: 'whatsApp-integration',
+    name: 'complete-module',
     /**
      * By default we are using the https://blueprintjs.com/docs/#icons. Use the corresponding name
      * Otherwise, create an icon in the assets module in the following format studio_${module.menuIcon}
@@ -57,5 +57,4 @@ const entryPoint: sdk.ModuleEntryPoint = {
     homepage: 'https://botpress.com'
   }
 }
-
 export default entryPoint

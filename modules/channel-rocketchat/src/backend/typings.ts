@@ -1,3 +1,5 @@
 import { RocketChatClient } from './client'
 
-export type Clients = { [key: string]: RocketChatClient }
+export interface Clients {
+  [key: string]: RocketChatClient
+}
