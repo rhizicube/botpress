@@ -112,7 +112,7 @@ export class RocketChatClient {
       })
     )
     // Rocket.Chat receive function
-    const receiveRocketChatMessages = async function(err, message, meta) {
+    const receiveRocketChatMessages = async function (err, message, meta) {
       // eslint-disable-next-line no-console
       console.log('entering in try block')
       try {
@@ -168,25 +168,134 @@ export class RocketChatClient {
   sendMessageToRocketChat(event) {
     //console.log('event: ', event)
     const AuthToken = 'wa auth token'
+    console.log('event: ', event)
+
     const myAction = async event => {
-      const data = JSON.stringify({
-        text: 'Hello, Utkarsh',
-        type: 'text',
-        phone_number_id: '108603772099729',
-        from: '15550227728'
-      })
+
+      let data: {}
+
+
+      if (event.payload.type === 'text') {
+        data = JSON.stringify({
+          type: event.payload.type,
+          'text': event.payload.text
+        })
+      }
+
+      // if (event.payload.type === 'reaction') {
+      //   const messages_id = event.payload.reaction.message_id
+      //   const emoji_id = event.payload.reaction.emoji_id
+      //   data = JSON.stringify({
+      //     type: event.payload.type,
+      //     'reaction': {
+      //       'message_id': messages_id,
+      //       'emoji': emoji_id
+      //     }
+      //   })
+      // }
+
+      if (event.payload.type === 'image') {
+        data = JSON.stringify({
+          type: event.payload.type,
+          'image': { 'link': event.payload.image }
+        })
+      }
+      // if (event.payload.type === 'video') {
+      //   data = JSON.stringify({
+      //     type: event.payload.type,
+      //     'video': { 'link': event.payload.video }
+      //   })
+      // }
+
+      // if (event.payload.type === 'location') {
+      //   const LONG_NUMBER = event.payload.location.longitude
+      //   const LAT_NUMBER = event.payload.location.latitude
+      //   const LOCATION_NAME = event.payload.location.name
+      //   const LOCATION_ADDRESS = event.payload.location.address
+      //   data = JSON.stringify({
+      //     type: event.payload.type,
+      //     'location': {
+      //       'longitude': LONG_NUMBER,
+      //       'latitude': LAT_NUMBER,
+      //       'name': LOCATION_NAME,
+      //       'address': LOCATION_ADDRESS
+      //     }
+      //   })
+      // }
+
+      // if (event.payload.type === 'dropdown') {
+      //   data = JSON.stringify({
+      //     type: 'interactive',
+      //     'interactive': {
+      //       'type': 'button',
+      //       'body': {
+      //         'text': 'Sun rises in east'
+      //       },
+      //       'action': {
+      //         'buttons': [
+      //           {
+      //             'type': 'reply',
+      //             'reply': {
+      //               'id': 'UNIQUE_BUTTON_ID_1',
+      //               'title': 'True'
+      //             }
+      //           },
+      //           {
+      //             'type': 'reply',
+      //             'reply': {
+      //               'id': 'UNIQUE_BUTTON_ID_2',
+      //               'title': 'False'
+      //             }
+      //           }
+      //         ]
+      //       }
+      //     }
+
+      //   })
+      // }
+
+      // if (event.payload.type === 'card') {
+      //   data = JSON.stringify({
+      //     'type': 'contacts',
+      //     'contacts': [
+      //       {
+      //         'addresses': {
+      //           'street': 'Ghaziabad',
+      //           'city': 'Ghaziabad',
+      //           'state': 'U.P.',
+      //           'country': 'India',
+      //           'type': 'Office'
+      //         },
+      //         'birthday': '2001-05-09',
+      //         'name': {
+      //           'formatted_name': 'Rhizicube',
+      //           'first_name': 'FIRST_NAME',
+      //           'last_name': 'LAST_NAME',
+      //           'middle_name': 'MIDDLE_NAME'
+      //         },
+      //         'org': {
+      //           'company': 'COMPANY',
+      //           'department': 'AI',
+      //           'title': 'Tech'
+      //         }
+      //       }
+      //     ]
+      //   })
+      // }
+
       const config = {
         method: 'post',
         maxBodyLength: Infinity,
         url: 'http://localhost:3002/webhook',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + AuthToken
+          Authorization:
+            'Bearer EAAMqZC1mdllcBABU2N3SwZAetHTwEMxczZAtZCSlWZBZBO7EwWThR3S5TypYhkDfTiGCUC1cc0SqqUVEEkUKdnZAZCpeC4bxtkt5m9sCSnYsVy3lMxXYC3TLma6iSQpd1Q9XTb8eePxBvXKL7VWDwagEYOuWT7ZBShBM5R8kX9v7FpB5t2CncagpbGcZBqKzvLKrxyIoHq3AncHAZDZD'
         },
         data
       }
 
-      //console.log('config for nodeJS API: ', config)
+      console.log('config for nodeJS API: ', config)
 
       const waRes = axios
         .request(config)
