@@ -15,8 +15,8 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   const api = () => {
     return new Promise((resolve, reject) => {
       const datas = {
-        name: 'Utkarsh',
-        job: 'SDE'
+        name: 'Rhizicube',
+        job: 'AI'
       }
 
       axios({
