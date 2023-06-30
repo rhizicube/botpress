@@ -290,7 +290,7 @@ export class RocketChatClient {
         headers: {
           'Content-Type': 'application/json',
           Authorization:
-            'Bearer EAAMqZC1mdllcBABU2N3SwZAetHTwEMxczZAtZCSlWZBZBO7EwWThR3S5TypYhkDfTiGCUC1cc0SqqUVEEkUKdnZAZCpeC4bxtkt5m9sCSnYsVy3lMxXYC3TLma6iSQpd1Q9XTb8eePxBvXKL7VWDwagEYOuWT7ZBShBM5R8kX9v7FpB5t2CncagpbGcZBqKzvLKrxyIoHq3AncHAZDZD'
+            'Bearer Token'
         },
         data
       }
