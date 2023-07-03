@@ -1,6 +1,5 @@
 import { driver, methodCache, api } from '@rocket.chat/sdk'
 //import Promise from "bluebird";
-
 import * as sdk from 'botpress/sdk'
 import { asyncMiddleware, asyncMiddleware as asyncMw, BPRequest } from 'common/http'
 import { Request, Response, NextFunction } from 'express'
@@ -15,7 +14,7 @@ const debug = DEBUG('channel-rocketchat')
 const debugIncoming = debug.sub('incoming')
 const debugOutgoing = debug.sub('outgoing')
 
-const outgoingTypes = ['text', 'image', 'carousel', 'card']
+const outgoingTypes = ['text', 'image', 'carousel', 'card', 'video']
 
 const axios = require('axios')
 const bodyParser = require('body-parser')
@@ -167,9 +166,9 @@ export class RocketChatClient {
   // send message from Botpress to Rocket.Chat
   sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = 'AuthToken'
-    const user_phone_number = 'user_phone_number'
-    const phone_number_id = 'phone_number_id'
+    const AuthToken = 'EAAMqZC1mdllcBABlggHqagHTz6p2motjP3ii8ktzTVgMnr9YpBF5o9l65JncbyofrO5cSVL2rGoeBkLoSbL2OuDnj152kKWOFXFS4ViVFWDx2wn3biUwnZCwFXyIXsTi2f4yxylZApq1iqbjVkBt6VPjpplbFAD0Rg0AgvLKx3o25kcvlI5s4wTliNIaMYn6Sfbfb6sngZDZD'
+    const user_phone_number = '919599379011'
+    const phone_number_id = '114392358180996'
     const current_version = 'v17.0'
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
@@ -191,6 +190,7 @@ export class RocketChatClient {
       }
 
 
+
       if (event.payload.type === 'image') {
         payload_data = JSON.stringify({
           'messaging_product': 'whatsapp',
@@ -200,6 +200,8 @@ export class RocketChatClient {
           'image': { 'link': event.payload.image }
         })
       }
+
+
 
       const config = {
         method: 'post',
