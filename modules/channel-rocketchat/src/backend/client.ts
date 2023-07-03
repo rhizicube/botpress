@@ -166,10 +166,10 @@ export class RocketChatClient {
   // send message from Botpress to Rocket.Chat
   sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = 'EAAMqZC1mdllcBABlggHqagHTz6p2motjP3ii8ktzTVgMnr9YpBF5o9l65JncbyofrO5cSVL2rGoeBkLoSbL2OuDnj152kKWOFXFS4ViVFWDx2wn3biUwnZCwFXyIXsTi2f4yxylZApq1iqbjVkBt6VPjpplbFAD0Rg0AgvLKx3o25kcvlI5s4wTliNIaMYn6Sfbfb6sngZDZD'
-    const user_phone_number = '919599379011'
-    const phone_number_id = '114392358180996'
-    const current_version = 'v17.0'
+    const AuthToken = 'auth_token'
+    const user_phone_number = 'phone_'
+    const phone_number_id = 'phone_te'
+    const current_version = 'version'
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
     console.log('event: ', event)
