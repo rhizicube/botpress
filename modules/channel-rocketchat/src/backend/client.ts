@@ -106,52 +106,72 @@ export class RocketChatClient {
         direction: 'incoming',
         payload: { text: x.name, user_info: user },
         type: 'text',
+        threadId: '5',
         // preview: message.msg,
         target: 'GENERAL'
       })
     )
+
+    // const event = bp.IO.Event({
+    //   messageId: message.id,
+    //   botId: req.botId,
+    //   channel: 'web',
+    //   direction: 'incoming',
+    //   payload,
+    //   target: req.userId,
+    //   threadId: req.conversationId,
+    //   type: payload.type,
+    //   credentials: req.credentials
+    // })
+
+
+
     // Rocket.Chat receive function
-    const receiveRocketChatMessages = async function (err, message, meta) {
-      // eslint-disable-next-line no-console
-      console.log('entering in try block')
-      try {
-        //console.log('calling listen api')
-        if (!err) {
-          // If message have .t so it's a system message, so ignore it
-          if (message.t === undefined) {
-            const userId = message.u._id
-            const user = await self.bp.users.getOrCreateUser(message.rid, userId)
+    // const receiveRocketChatMessages = async function (err, message, meta) {
+    //   // eslint-disable-next-line no-console
+    //   console.log('entering in try block')
+    //   try {
+    //     //console.log('calling listen api')
+    //     if (!err) {
+    //       // If message have .t so it's a system message, so ignore it
+    //       if (message.t === undefined) {
+    //         const userId = message.u._id
+    //         const user = await self.bp.users.getOrCreateUser(message.rid, userId)
 
-            debugIncoming('Receiving message %o', message)
-            debugIncoming('User %o', user)
-            // console.log('inside receiveRocketChatMessages')
-            await self.bp.events.sendEvent(
-              self.bp.IO.Event({
-                //id: message.ts.$date.toString(),
-                botId: self.botId,
-                channel: 'rocketchat',
-                direction: 'incoming',
-                payload: { text: message.msg, user_info: user },
-                type: 'text',
-                preview: message.msg,
-                target: message.rid
-              })
-            )
-          }
-        }
-      } catch (error) {
-        console.log(error)
-      }
-    }
+    //         debugIncoming('Receiving message %o', message)
+    //         debugIncoming('User %o', user)
+    //         // console.log('inside receiveRocketChatMessages')
+    //         await self.bp.events.sendEvent(
+    //           self.bp.IO.Event({
+    //             //id: message.ts.$date.toString(),
+    //             botId: self.botId,
+    //             channel: 'rocketchat',
+    //             direction: 'incoming',
+    //             payload: { text: message.msg, user_info: user },
+    //             type: 'text',
+    //             preview: message.msg,
+    //             target: message.rid
+    //           })
+    //         )
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.log(error)
+    //   }
+    // }
 
-    //console.log('calling callback function')
-    const options = {
-      dm: true,
-      livechat: true,
-      edited: true
-    }
-    // console.log('Listening to Rocket.Chat messages ... ')
-    return driver.respondToMessages(receiveRocketChatMessages, options)
+    // //console.log('calling callback function')
+    // const options = {
+    //   dm: true,
+    //   livechat: true,
+    //   edited: true
+    // }
+    // // console.log('Listening to Rocket.Chat messages ... ')
+    // return driver.respondToMessages(receiveRocketChatMessages, options)
+
+
+
+
   }
 
   isConnected() {
@@ -166,10 +186,10 @@ export class RocketChatClient {
   // send message from Botpress to Rocket.Chat
   sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = 'auth_token'
-    const user_phone_number = 'phone_'
-    const phone_number_id = 'phone_te'
-    const current_version = 'version'
+    const AuthToken = 'EAAMqZC1mdllcBAK2AnZB90nzlRjJRFngLCdSe0J1ytVGRbXGBkm38hL8vBR7DMtVXQwChq1qnXIkcPhAcqCfJxpbEmti5OL7MfBokybBZCuhi4XGrBPSSVgT7xUOCXRhtL00sLndtP1d9sEFNp3sG2jzXwhb3OMOwn3EfAEgciJgCIeRlo1dZCCZBBpngB6ZBj0ZCckHW65cgZDZD'
+    const user_phone_number = '919599379011'
+    const phone_number_id = '114392358180996'
+    const current_version = 'v17.0'
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
     console.log('event: ', event)
@@ -269,6 +289,31 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
     if (event.channel !== 'channel-rocketchat') {
       return next()
     }
+
+    const messaging = bp.messaging.forBot(event.botId)
+    console.log('messaging...', messaging)
+
+    const messageType = event.type === 'default' ? 'text' : event.type
+    console.log('messagingType...', messageType)
+
+    const userId = event.target
+    console.log('userId...', userId)
+
+    const conversationId = event.threadId
+
+
+    // if (conversationId === undefined) {
+    //   const convs = await messaging.listConversations(userId, 1)
+    //   console.log('firstconverstionId...', conversationId)
+    //   if (convs?.length) {
+    //     conversationId = convs[0].id
+    //     console.log('converstionId...', conversationId)
+    //   } else {
+    //     conversationId = (await messaging.createConversation(userId)).id
+    //     console.log('converstionId...', conversationId)
+    //   }
+    // }
+
 
     const client: RocketChatClient = clients[event.botId]
     if (!client) {

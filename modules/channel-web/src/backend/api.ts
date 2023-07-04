@@ -143,7 +143,7 @@ export default async (bp: typeof sdk, db: Database) => {
       let conversation: Conversation
       try {
         conversation = await req.messaging.getConversation(conversationId)
-      } catch {}
+      } catch { }
 
       if (!conversation || !userId || conversation.userId !== userId) {
         return next(ERR_BAD_CONV_ID)
