@@ -93,6 +93,7 @@ const registerMiddleware = async (bp: typeof sdk, state: StateType) => {
     const agent = await repository.getAgent(handoff.agentId)
 
     if (handoff.userChannel === 'web' && agent.attributes) {
+      console.log('incoming web...')
       const firstName = agent.attributes.firstname
       const lastname = agent.attributes.lastname
       const avatarUrl = agent.attributes.picture_url

@@ -19,7 +19,8 @@ const onServerStarted = async (bp: typeof sdk) => {
 
 // At this point, you would likely setup the API route of your module.
 const onServerReady = async (bp: typeof sdk) => {
-  console.log('onserverReady')
+
+  console.log('onserverReady', bp.users.getAllUsers.name)
   // create a router to the bot
   router = bp.http.createRouterForBot('channel-rocketchat', {
     checkAuthentication: false,

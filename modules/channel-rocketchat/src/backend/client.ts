@@ -1,6 +1,7 @@
 import { driver, methodCache, api } from '@rocket.chat/sdk'
 //import Promise from "bluebird";
 import * as sdk from 'botpress/sdk'
+// import { uuid } from 'botpress/sdk'
 import { asyncMiddleware, asyncMiddleware as asyncMw, BPRequest } from 'common/http'
 import { Request, Response, NextFunction } from 'express'
 import _ from 'lodash'
@@ -9,6 +10,14 @@ import { Config } from '../config'
 import { Clients } from './typings'
 //import { respondToMessages } from './wa'
 //import { respondToMessages } from './whatsapp'
+
+
+type ChatRequest = BPRequest & {
+  botId: string
+  conversationId: string
+
+}
+
 
 const debug = DEBUG('channel-rocketchat')
 const debugIncoming = debug.sub('incoming')
@@ -33,6 +42,8 @@ export class RocketChatClient {
   private roomsJoined: any
   private subscribed: any
   private connected: boolean
+  // public userId: uuid
+
 
   constructor(private bp: typeof sdk, private botId: string, private config: Config, private router) {
     this.logger = bp.logger.forBot(botId)
@@ -90,13 +101,20 @@ export class RocketChatClient {
   // listen to messages  from Rocket.Chat
   async listen(x, botId) {
     const self = this
-    //console.log('api response in listen: ', x)
+
+    console.log('api response in listen: ', x)
+    const userId = x.threadId
 
     // Returns an existing user or create a new one with the specified keys
     // export function getOrCreateUser(channel: string, userId: string, botId?: string): GetOrCreateResult<User>
+    // const users = await this.bp.messaging.forBot(botId).getUser(userId)
 
-    const userId = 'GENERAL'
-    const user = self.bp.users.getOrCreateUser('GENERAL', userId, botId)
+    // const users = this.bp.messaging.forBot(botId).getUser(userId)
+    // console.log('users,getusers', users)
+
+    await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId) // Just to create the user if it doesn't exist
+    const user = await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId)
+    console.log('###################', 'user', user, user.result.id)
 
     self.bp.events.sendEvent(
       self.bp.IO.Event({
@@ -106,7 +124,7 @@ export class RocketChatClient {
         direction: 'incoming',
         payload: { text: x.name, user_info: user },
         type: 'text',
-        threadId: '5',
+        threadId: x.threadId,
         // preview: message.msg,
         target: 'GENERAL'
       })
@@ -160,7 +178,7 @@ export class RocketChatClient {
     //   }
     // }
 
-    // //console.log('calling callback function')
+    // // //console.log('calling callback function')
     // const options = {
     //   dm: true,
     //   livechat: true,
@@ -168,9 +186,6 @@ export class RocketChatClient {
     // }
     // // console.log('Listening to Rocket.Chat messages ... ')
     // return driver.respondToMessages(receiveRocketChatMessages, options)
-
-
-
 
   }
 
@@ -184,15 +199,23 @@ export class RocketChatClient {
   }
 
   // send message from Botpress to Rocket.Chat
-  sendMessageToRocketChat(event) {
+  async sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = 'EAAMqZC1mdllcBAK2AnZB90nzlRjJRFngLCdSe0J1ytVGRbXGBkm38hL8vBR7DMtVXQwChq1qnXIkcPhAcqCfJxpbEmti5OL7MfBokybBZCuhi4XGrBPSSVgT7xUOCXRhtL00sLndtP1d9sEFNp3sG2jzXwhb3OMOwn3EfAEgciJgCIeRlo1dZCCZBBpngB6ZBj0ZCckHW65cgZDZD'
-    const user_phone_number = '919599379011'
-    const phone_number_id = '114392358180996'
+    const AuthToken = 'process.Auth token'
+    const user_phone_number = 'process.whatsapp-no'
+    const phone_number_id = 'process.meta-phone-no.'
     const current_version = 'v17.0'
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
     console.log('event: ', event)
+    // const session = await this.db.getOrCreateUserSession(event);
+    // const session = {
+    //   botId: event.botId,
+    //   channel: event.channel,
+    //   userId: event.target,
+    //   thread_id: event.threadId
+    // }
+
 
     const myAction = async event => {
 
@@ -235,7 +258,7 @@ export class RocketChatClient {
         data: payload_data
       }
 
-      console.log('config for nodeJS API: ', config)
+      // console.log('config for nodeJS API: ', config)
 
       const waRes = axios
         .request(config)
@@ -249,7 +272,20 @@ export class RocketChatClient {
       const currentData = waRes.data
       return currentData
     }
+    const configs = await this.bp.config.getModuleConfigForBot('channel-rocketchat', event.botId)
+
+    // const confige = await this.bp.http.getAxiosConfigForBot(event.botId, { localUrl: true })
+    // console.log('$$$$$$$$$$$$$$$$$', configs)
+    // console.log('filtered confige', JSON.stringify(confige, null, 2))
+    // const res = await axios.get('/mod/hitlnext/agents', confige)
+    // console.log('hitl agent', JSON.stringify(res.data, null, 2))
+    // console.log('online agent', res.data.some(x => x.online))
+
+    // event.state.onlineAgents = res.data.some(x => x.online)
+    // console.log('##event state##', event.state.temp.onlineAgents)
     return myAction(event)
+    // const msg =  event.payload?.text?.image
+    // this.bp.notifications.create(event.botId, {msg, level: 'info', url: '/modules/hitl' })
   }
 
   // send messages from Botpress to Rocket.Chat

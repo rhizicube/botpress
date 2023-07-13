@@ -13,6 +13,7 @@ import { agentName } from '../helper'
 
 import { StateType } from './index'
 import { HandoffStatus, IAgent, IComment, IHandoff } from './../types'
+import api from './api'
 import { UnprocessableEntityError, UnauthorizedError } from './errors'
 import { extendAgentSession, formatValidationError, makeAgentId } from './helpers'
 import Repository, { CollectionConditions } from './repository'
@@ -215,35 +216,57 @@ export default async (bp: typeof sdk, state: StateType, repository: Repository) 
   router.post(
     '/handoffs/:id/assign',
     agentOnlineMiddleware,
-    errorMiddleware(async (req: RequestWithUser, res: Response) => {
+    (async (req: RequestWithUser, res: Response) => {
       const { botId } = req.params
       const { email, strategy } = req.tokenUser!
+      // const { webSessionId } = req.body
+      // console.log('websessionId...', webSessionId)
 
       const agentId = makeAgentId(strategy, email)
       const agent = await repository.getCurrentAgent(req as BPRequest, req.params.botId, agentId)
+      console.log('agent in HITL', agent)
 
       let handoff = await repository.findHandoff(req.params.botId, req.params.id)
-
+      console.log('handoff in hitl...', handoff)
       const userId = await repository.mapVisitor(botId, agentId)
+      //console.log('userID in hitl...', userId, 'websessionId...', webSessionId)
       const conversation = await bp.messaging.forBot(botId).createConversation(userId)
 
       const agentThreadId = conversation.id
+      // console.log('agentThreadId in hitl...', agentThreadId)
       const payload: Pick<IHandoff, 'agentId' | 'agentThreadId' | 'assignedAt' | 'status'> = {
         agentId,
+        status: 'assigned',
         agentThreadId,
-        assignedAt: new Date(),
-        status: 'assigned'
+        assignedAt: new Date()
       }
+      console.log('payload check...', payload)
       Joi.attempt(payload, AssignHandoffSchema)
-
+      // handoff.status = 'assigned'
+      console.log('Joi attempt...', Joi.attempt(payload, AssignHandoffSchema))
+      console.log('handoff.status in HITL...', handoff.status, 'payload.status in HITL...', payload.status)
+      // handoff = await repository.updateHandoff(req.params.botId, req.params.id, payload)
+      // console.log('handoff.status in HITL after update...', handoff.status, 'payload.status in HITL after update...', payload.status)
       try {
-        validateHandoffStatusRule(handoff.status, payload.status)
+        // repository = new Repository(bp, state.timeouts)
+        // await api(bp, state, repository)
+        console.log('try is running...................')
+
+        // validateHandoffStatusRule(handoff.status, payload.status)
+
       } catch (e) {
+        console.log('catch is running...................')
         throw new UnprocessableEntityError(formatValidationError(e))
       }
+      // repository = new Repository(bp, state.timeouts)
+      // await api(bp, state, repository)
+
 
       handoff = await repository.updateHandoff(req.params.botId, req.params.id, payload)
       state.cacheHandoff(req.params.botId, agentThreadId, handoff)
+      console.log('state of cache handoffs...', state.cacheHandoff)
+      const extendSess = await extendAgentSession(repository, realtime, req.params.botId, agentId)
+      console.log('extend session...', extendSess)
 
       await extendAgentSession(repository, realtime, req.params.botId, agentId)
 
@@ -255,6 +278,11 @@ export default async (bp: typeof sdk, state: StateType, repository: Repository) 
 
         const eventDestination = toEventDestination(req.params.botId, handoff)
 
+        console.log('event destination in hitl...', eventDestination)
+        const serv = await service.sendMessageToUser(configs.assignMessage, eventDestination, language, {
+          agentName: agentName(agent)
+        })
+        console.log('service sendmessage in hitl....', serv)
         await service.sendMessageToUser(configs.assignMessage, eventDestination, language, {
           agentName: agentName(agent)
         })
@@ -268,7 +296,7 @@ export default async (bp: typeof sdk, state: StateType, repository: Repository) 
 
       const baseEvent: Partial<sdk.IO.EventCtorArgs> = {
         direction: 'outgoing',
-        channel: 'web',
+        channel: 'channel-rocketchat',
         botId: handoff.botId,
         target: userId,
         threadId: handoff.agentThreadId
