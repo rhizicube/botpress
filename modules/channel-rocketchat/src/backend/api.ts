@@ -3,8 +3,29 @@ import bodyParser from 'body-parser'
 import * as sdk from 'botpress/sdk'
 import { asyncMiddleware as asyncMw, StandardError } from 'common/http'
 import { Request, Response } from 'express'
+import { v4 as uuidv4 } from 'uuid'
 
 
+
+// console.log('Your UUID is: ' + myuuid)
+
+const token = 'hello'
+
+// Imports dependencies and set up http server
+const body_parser = require('body-parser')
+const express = require('express')
+const request = require('request')
+// express = require('express'),
+// body_parser = require('body-parser'),
+const app = express().use(body_parser.json()) // creates express http server
+
+// Sets server port and logs message on success
+// app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'))
+
+// http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/webhook
+
+// const express = require('express')
+// const app = express()
 
 type ListenCallback = (apiResponse: any) => Promise<void>
 export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
@@ -15,14 +36,14 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   })
   bp.logger.info('router:', router)
   router.use(bodyParser.json())
-  const api = async (respThreadId) => {
+  const api = async (respThreadId, messages) => {
     // return new Promise((resolve, reject) => {
     const datas = {
       name: 'Rhizicube',
       job: 'AI',
 
     }
-    // console.log('################3', req)
+
 
     try {
       const response = await axios({
@@ -32,7 +53,7 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
         headers: { 'Content-Type': 'application/json' }
       })
       console.log('API response:', response.data)
-      const apiResponse = { ...response.data, threadId: respThreadId }
+      const apiResponse = { ...response.data, threadId: respThreadId, message: messages }
 
       return apiResponse
     } catch (error) {
@@ -53,12 +74,101 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
     res.send({ Hello: 'Testing' })
   })
 
+  // Sets server port and logs message on success
+  // app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'))
+
+  app.post('/webhook', (req, res) => {
+    // Parse the request body from the POST
+    const body = req.body
+
+    // Check the Incoming webhook message
+    console.log('whatsapp receiving message...', JSON.stringify(req.body, null, 2))
+
+    // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
+    if (req.body.object) {
+      if (
+        req.body.entry &&
+        req.body.entry[0].changes &&
+        req.body.entry[0].changes[0] &&
+        req.body.entry[0].changes[0].value.messages &&
+        req.body.entry[0].changes[0].value.messages[0]
+      ) {
+        const phone_number_id =
+          req.body.entry[0].changes[0].value.metadata.phone_number_id
+        const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
+        const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
+
+        const myuuid = uuidv4()
+        const dataRec = {
+          'messaging_product': 'whatsapp',
+          'threadId': from,
+          'message': msg_body
+        }
+
+        axios.post('http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/listen', dataRec)
+          .then(response => console.log(response))
+          .catch(error => {
+            console.error('There was an error!', error)
+          })
+      }
+      res.sendStatus(200)
+    } else {
+      // Return a '404 Not Found' if event is not from a WhatsApp API
+      res.sendStatus(404)
+    }
+  })
+
+
+
+  //Accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
+  //info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
+  app.get('/webhook', (req, res) => {
+    /**
+     * UPDATE YOUR VERIFY TOKEN
+     *This will be the Verify Token value when you set up webhook
+     **/
+    const verify_token = process.env.VERIFY_TOKEN
+
+    // Parse params from the webhook verification request
+    const mode = req.query['hub.mode']
+    const token = req.query['hub.verify_token']
+    const challenge = req.query['hub.challenge']
+
+    // Check if a token and mode were sent
+    if (mode && token) {
+      // Check the mode and token sent are correct
+      if (mode === 'subscribe' && token === verify_token) {
+        // Respond with 200 OK and challenge token from the request
+        console.log('WEBHOOK_VERIFIED')
+        res.status(200).send(challenge)
+      } else {
+        // Responds with '403 Forbidden' if verify tokens do not match
+        res.sendStatus(403)
+      }
+    }
+  })
+
+
+  // const dataRec = {
+
+  //   'messaging_product': 'whatsapp',
+  //   'threadId': `${threadId}`
+
+
+  // }
+  // axios.post('http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/listen', dataRec)
+  //   .then(response => console.log(response))
+  //   .catch(error => {
+  //     console.error('There was an error!', error)
+  //   })
+
+
   router.post(
     '/listen',
     asyncMiddleware(async (req: Request, res: Response) => {
       try {
         console.log('%%%%%%%%%%%%%%%%%%%%%%%%', 'req.body', req.body)
-        const apiResponse = await api(req.body.threadId) // Call the API and wait for the response
+        const apiResponse = await api(req.body.threadId, req.body.message) // Call the API and wait for the response
         //console.log('API response:', apiResponse)
         // const resultObject = {
         //   apiResponse,

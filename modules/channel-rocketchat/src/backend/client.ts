@@ -122,7 +122,7 @@ export class RocketChatClient {
         botId,
         channel: 'channel-rocketchat',
         direction: 'incoming',
-        payload: { text: x.name, user_info: user },
+        payload: { text: x.message, user_info: user },
         type: 'text',
         threadId: x.threadId,
         // preview: message.msg,
@@ -201,10 +201,10 @@ export class RocketChatClient {
   // send message from Botpress to Rocket.Chat
   async sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = 'process.Auth token'
-    const user_phone_number = 'process.whatsapp-no'
-    const phone_number_id = 'process.meta-phone-no.'
-    const current_version = 'v17.0'
+    const AuthToken = ''
+    const user_phone_number = ''
+    const phone_number_id = ''
+    const current_version = ''
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
     console.log('event: ', event)
