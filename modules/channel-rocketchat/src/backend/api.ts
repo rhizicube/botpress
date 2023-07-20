@@ -24,12 +24,12 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   bp.logger.info('router:', router)
   router.use(bodyParser.json())
   const api = async (respThreadId, messages) => {
-    // return new Promise((resolve, reject) => {
     const datas = {
       name: 'Rhizicube',
       job: 'AI',
 
     }
+
 
     try {
       const response = await axios({
@@ -38,7 +38,6 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
         data: datas,
         headers: { 'Content-Type': 'application/json' }
       })
-      console.log('API response:', response.data)
       const apiResponse = { ...response.data, threadId: respThreadId, message: messages }
 
       return apiResponse
@@ -61,12 +60,27 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   })
 
   // Sets server port and logs message on success
+  // app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'))
 
   router.post('/webhook', (req, res) => {
     // Parse the request body from the POST
-
+    const body = req.body
+    const from = '12421'
     // Check the Incoming webhook message
     console.log('whatsapp receiving message...', JSON.stringify(req.body, null, 2))
+    const myuuid = uuidv4()
+    const threadID = myuuid + - + from
+    const dataRec = {
+      'messaging_product': 'whatsapp',
+      'threadId': threadID,
+      'message': 'msg_body'
+    }
+
+    axios.post('http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/listen', dataRec)
+      .then(response => console.log(response))
+      .catch(error => {
+        console.error('There was an error!', error)
+      })
     // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
     if (req.body.object) {
       if (
@@ -89,11 +103,22 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
           'message': msg_body
         }
 
-        axios.post('http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/listen', dataRec)
-          .then(response => console.log(response))
-          .catch(error => {
-            console.error('There was an error!', error)
+        router.post(
+          '/listen',
+          asyncMiddleware(async (req: Request, res: Response) => {
+            try {
+              const apiResponse = await api(req.body.threadId, req.body.message) // Call the API and wait for the response
+              void listenCallback(apiResponse)
+              res.sendStatus(201)
+
+            } catch (error) {
+              console.log('API error:', error)
+              res.sendStatus(500)
+            }
           })
+        )
+
+
       }
       res.sendStatus(200)
     } else {
