@@ -95,19 +95,13 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
         const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
         const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
 
-        const myuuid = uuidv4()
-        const threadID = myuuid + - + from
-        const dataRec = {
-          'messaging_product': 'whatsapp',
-          'threadId': threadID,
-          'message': msg_body
-        }
+        const threadID = from
 
         router.post(
           '/listen',
           asyncMiddleware(async (req: Request, res: Response) => {
             try {
-              const apiResponse = await api(req.body.threadId, req.body.message) // Call the API and wait for the response
+              const apiResponse = await api(threadID, msg_body) // Call the API and wait for the response
               void listenCallback(apiResponse)
               res.sendStatus(201)
 
