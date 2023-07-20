@@ -123,7 +123,7 @@ export class RocketChatClient {
 
   // send message from Botpress to Rocket.Chat
   async sendMessageToRocketChat(event) {
-    const AuthToken = 'EAAMqZC1mdllcBADIqah3uNTS0pDTYjxDMZBBPBRD8r7qphqbyvPJZCG4mnVcgWjiZB5gZAWHZB5qLlYpqLXMgVqhhyvtWaCON6GXNEQvdpbzcvTm3EZCpxJy4QGlNqIh1S9KwnVcmpmFlvYfjM0Iaq5Fbunp7KSqozynTTiwz8Ysa8MJ48tquRwQX4M9DcqxH4ix3wvEKDPgQRx6lelf8F0Xi9k6vjcrcoZD'
+    const AuthToken = 'EAAMqZC1mdllcBAELc2tqG8lSqF6ZAZByZBlnTFTOAeNkIt5sUab7Y4C8Q03HoulFhuWrHQGxQNZBWWcZCYuokwiRwU7UXn4ieqqy4whJ6ZCIWoxzCq4tH2ZBCJyHZBXKXacq18UxYa4tx8ZA3AZCEqnXuqPm2J67iyF7dI4rKhsKvZAkjInf5Jw6vnAWWuTP8ufhq8ACsYKJDpf91lUwbod9UcspeH6xXfKLQnsZD'
     const user_phone_number = '919599379011'
     const phone_number_id = '114392358180996'
     const current_version = 'v17.0'

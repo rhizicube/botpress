@@ -64,23 +64,10 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
 
   router.post('/webhook', (req, res) => {
     // Parse the request body from the POST
-    const body = req.body
-    const from = '12421'
+
     // Check the Incoming webhook message
     console.log('whatsapp receiving message...', JSON.stringify(req.body, null, 2))
-    const myuuid = uuidv4()
-    const threadID = myuuid + - + from
-    const dataRec = {
-      'messaging_product': 'whatsapp',
-      'threadId': threadID,
-      'message': 'msg_body'
-    }
 
-    axios.post('http://localhost:3000/api/v1/bots/basic-bot-01/mod/channel-rocketchat/listen', dataRec)
-      .then(response => console.log(response))
-      .catch(error => {
-        console.error('There was an error!', error)
-      })
     // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
     if (req.body.object) {
       if (
@@ -95,7 +82,8 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
         const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
         const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
 
-        const threadID = from
+        const myuuid = uuidv4()
+        const threadID = myuuid + - + from
 
         router.post(
           '/listen',
