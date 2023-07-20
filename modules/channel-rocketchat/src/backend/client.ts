@@ -1,16 +1,11 @@
 import { driver, methodCache, api } from '@rocket.chat/sdk'
-//import Promise from "bluebird";
 import * as sdk from 'botpress/sdk'
-// import { uuid } from 'botpress/sdk'
 import { asyncMiddleware, asyncMiddleware as asyncMw, BPRequest } from 'common/http'
 import { Request, Response, NextFunction } from 'express'
 import _ from 'lodash'
-
+import { v4 as uuidv4 } from 'uuid'
 import { Config } from '../config'
 import { Clients } from './typings'
-//import { respondToMessages } from './wa'
-//import { respondToMessages } from './whatsapp'
-
 
 type ChatRequest = BPRequest & {
   botId: string
@@ -18,21 +13,23 @@ type ChatRequest = BPRequest & {
 
 }
 
-
 const debug = DEBUG('channel-rocketchat')
 const debugIncoming = debug.sub('incoming')
 const debugOutgoing = debug.sub('outgoing')
 
 const outgoingTypes = ['text', 'image', 'carousel', 'card', 'video']
 
+// Imports dependencies and set up http server
 const axios = require('axios')
 const bodyParser = require('body-parser')
+const body_parser = require('body-parser')
 const express = require('express')
-const app = express()
+const app = express().use(body_parser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-// userCache = new LRU({ max: 1000, maxAge: ms('1h') })
+const request = require('request')
 
+const token = 'hello'
 export class RocketChatClient {
   private interactive: any
   private logger: sdk.Logger
@@ -42,8 +39,6 @@ export class RocketChatClient {
   private roomsJoined: any
   private subscribed: any
   private connected: boolean
-  // public userId: uuid
-
 
   constructor(private bp: typeof sdk, private botId: string, private config: Config, private router) {
     this.logger = bp.logger.forBot(botId)
@@ -52,10 +47,8 @@ export class RocketChatClient {
 
   async connect() {
     this.connected = false
-    // split channe string
     function handleChannel(channelList) {
       if (channelList !== undefined) {
-        //channelList = channelList.replace(/[^\w\,._]/gi, "").toLowerCase();
         channelList = channelList.toLowerCase()
         if (channelList.match(',')) {
           channelList = channelList.split(',')
@@ -74,20 +67,16 @@ export class RocketChatClient {
         host: this.config.rocketChatUrl,
         useSsl: this.config.rocketChatUseSSL
       })
-      //console.log('Connected to Rocket.Chat at ' + this.config.rocketChatUrl)
       // login as Rocket.Chat bot user
       this.user = await driver.login({
         username: this.config.rocketChatBotUser,
         password: this.config.rocketChatBotPassword
       })
-      //console.log('Logged in Rocket.Chat as ' + this.config.rocketChatBotUser)
       // join to Rocket.Chat rooms
       this.roomList = handleChannel(this.config.rocketChatRoom)
       this.roomsJoined = await driver.joinRooms(this.roomList)
-      //console.log('BOT User ' + this.config.rocketChatBotUser + ' joined rooms ' + this.config.rocketChatRoom)
       // subscribe to messages
       this.subscribed = await driver.subscribeToMessages()
-      //console.log('subscribed to Rocket.Chat messages')
       // sent greeting message to each room
       for (const room of this.roomList) {
         const sent = await driver.sendToRoom(this.config.rocketChatBotUser + ' is listening you ...', room)
@@ -99,93 +88,117 @@ export class RocketChatClient {
   }
 
   // listen to messages  from Rocket.Chat
-  async listen(x, botId) {
+  async listen(botId) {
     const self = this
+    const router = self.bp.http.createRouterForBot('channel-rocketchat', {
+      checkAuthentication: false,
+      enableJsonBodyParser: true,
+    })
 
-    console.log('api response in listen: ', x)
-    const userId = x.threadId
+    router.use(bodyParser.json())
+    //Accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
+    //info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
+    router.get('/webhook', (req, res) => {
+      /**
+       * UPDATE YOUR VERIFY TOKEN
+       *This will be the Verify Token value when you set up webhook
+       **/
+      const verify_token = 'hello'
 
-    // Returns an existing user or create a new one with the specified keys
-    // export function getOrCreateUser(channel: string, userId: string, botId?: string): GetOrCreateResult<User>
-    // const users = await this.bp.messaging.forBot(botId).getUser(userId)
+      // Parse params from the webhook verification request
+      const mode = req.query['hub.mode']
+      const token = req.query['hub.verify_token']
+      const challenge = req.query['hub.challenge']
 
-    // const users = this.bp.messaging.forBot(botId).getUser(userId)
-    // console.log('users,getusers', users)
-
-    await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId) // Just to create the user if it doesn't exist
-    const user = await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId)
-    console.log('###################', 'user', user, user.result.id)
-
-    self.bp.events.sendEvent(
-      self.bp.IO.Event({
-        //id: message.ts.$date.toString(),
-        botId,
-        channel: 'channel-rocketchat',
-        direction: 'incoming',
-        payload: { text: x.message, user_info: user },
-        type: 'text',
-        threadId: x.threadId,
-        // preview: message.msg,
-        target: 'GENERAL'
-      })
-    )
-
-    // const event = bp.IO.Event({
-    //   messageId: message.id,
-    //   botId: req.botId,
-    //   channel: 'web',
-    //   direction: 'incoming',
-    //   payload,
-    //   target: req.userId,
-    //   threadId: req.conversationId,
-    //   type: payload.type,
-    //   credentials: req.credentials
-    // })
+      // Check if a token and mode were sent
+      if (mode && token) {
+        // Check the mode and token sent are correct
+        if (mode === 'subscribe' && token === verify_token) {
+          // Respond with 200 OK and challenge token from the request
+          console.log('WEBHOOK_VERIFIED')
+          res.status(200).send(challenge)
+        } else {
+          // Responds with '403 Forbidden' if verify tokens do not match
+          res.sendStatus(403)
+        }
+      }
+    })
 
 
 
-    // Rocket.Chat receive function
-    // const receiveRocketChatMessages = async function (err, message, meta) {
-    //   // eslint-disable-next-line no-console
-    //   console.log('entering in try block')
-    //   try {
-    //     //console.log('calling listen api')
-    //     if (!err) {
-    //       // If message have .t so it's a system message, so ignore it
-    //       if (message.t === undefined) {
-    //         const userId = message.u._id
-    //         const user = await self.bp.users.getOrCreateUser(message.rid, userId)
+    // Sets server port and logs message on success
+    router.post('/webhook', async (req, res) => {
 
-    //         debugIncoming('Receiving message %o', message)
-    //         debugIncoming('User %o', user)
-    //         // console.log('inside receiveRocketChatMessages')
-    //         await self.bp.events.sendEvent(
-    //           self.bp.IO.Event({
-    //             //id: message.ts.$date.toString(),
-    //             botId: self.botId,
-    //             channel: 'rocketchat',
-    //             direction: 'incoming',
-    //             payload: { text: message.msg, user_info: user },
-    //             type: 'text',
-    //             preview: message.msg,
-    //             target: message.rid
-    //           })
-    //         )
-    //       }
-    //     }
-    //   } catch (error) {
-    //     console.log(error)
-    //   }
-    // }
+      // Check the Incoming webhook message
+      console.log('whatsapp receiving message...', JSON.stringify(req.body, null, 2))
 
-    // // //console.log('calling callback function')
-    // const options = {
-    //   dm: true,
-    //   livechat: true,
-    //   edited: true
-    // }
-    // // console.log('Listening to Rocket.Chat messages ... ')
-    // return driver.respondToMessages(receiveRocketChatMessages, options)
+      if (req.body.object) {
+        if (
+          req.body.entry &&
+          req.body.entry[0].changes &&
+          req.body.entry[0].changes[0] &&
+          req.body.entry[0].changes[0].value.messages &&
+          req.body.entry[0].changes[0].value.messages[0]
+        ) {
+          const phone_number_id =
+            req.body.entry[0].changes[0].value.metadata.phone_number_id
+          const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
+          const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
+
+          const myuuid = uuidv4()
+          const threadID = myuuid + - + from
+
+          const userId = from
+          await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId) // Just to create the user if it doesn't exist
+          const user = await self.bp.users.getOrCreateUser('channel-rocketchat', userId, botId)
+
+          self.bp.events.sendEvent(
+            self.bp.IO.Event({
+              botId,
+              channel: 'channel-rocketchat',
+              direction: 'incoming',
+              payload: { text: msg_body, user_info: user },
+              type: 'text',
+              threadId: threadID,
+              target: 'GENERAL'
+            })
+          )
+        }
+        res.sendStatus(200)
+      } else {
+        // Return a '404 Not Found' if event is not from a WhatsApp API
+        res.sendStatus(404)
+      }
+    })
+
+
+    //Accepts GET requests at the /webhook endpoint. You need this URL to setup webhook initially.
+    //info on verification request payload: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
+    router.get('/webhook', async (req, res) => {
+      /**
+       * UPDATE YOUR VERIFY TOKEN
+       *This will be the Verify Token value when you set up webhook
+       **/
+      const verify_token = 'hello'
+
+      // Parse params from the webhook verification request
+      const mode = req.query['hub.mode']
+      const token = req.query['hub.verify_token']
+      const challenge = req.query['hub.challenge']
+
+      // Check if a token and mode were sent
+      if (mode && token) {
+        // Check the mode and token sent are correct
+        if (mode === 'subscribe' && token === verify_token) {
+          // Respond with 200 OK and challenge token from the request
+          console.log('WEBHOOK_VERIFIED')
+          res.status(200).send(challenge)
+        } else {
+          // Responds with '403 Forbidden' if verify tokens do not match
+          res.sendStatus(403)
+        }
+      }
+    })
 
   }
 
@@ -201,26 +214,15 @@ export class RocketChatClient {
   // send message from Botpress to Rocket.Chat
   async sendMessageToRocketChat(event) {
     //console.log('event: ', event)
-    const AuthToken = ''
-    const user_phone_number = ''
-    const phone_number_id = ''
-    const current_version = ''
+    const AuthToken = 'EAAMqZC1mdllcBAHjoXSKES3W8OhGVr46WXGNAGBh3MfomM9VJplf8mSDLXvC5ZAap4zGERbmL44jauZAUxPAyQqR7P1mPb9ZCQ4ypGs0it9lqDvRhnvcjZBHgl8IkCAWIplBFbjqYeObYbjZANcgJjGrMjLwIYNUTMh8KAipZBQL6yzZCpwb15fLiwcl6FCJNsc7rhBnyirXRCPNb73R1OF2z0W6RlAP70kZD'
+    const user_phone_number = '919599379011'
+    const phone_number_id = '114392358180996'
+    const current_version = 'v17.0'
     const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
-
-    console.log('event: ', event)
-    // const session = await this.db.getOrCreateUserSession(event);
-    // const session = {
-    //   botId: event.botId,
-    //   channel: event.channel,
-    //   userId: event.target,
-    //   thread_id: event.threadId
-    // }
-
 
     const myAction = async event => {
 
       let payload_data: {}
-
 
       if (event.payload.type === 'text') {
         payload_data = JSON.stringify({
@@ -232,8 +234,6 @@ export class RocketChatClient {
         })
       }
 
-
-
       if (event.payload.type === 'image') {
         payload_data = JSON.stringify({
           'messaging_product': 'whatsapp',
@@ -243,8 +243,6 @@ export class RocketChatClient {
           'image': { 'link': event.payload.image }
         })
       }
-
-
 
       const config = {
         method: 'post',
@@ -258,12 +256,9 @@ export class RocketChatClient {
         data: payload_data
       }
 
-      // console.log('config for nodeJS API: ', config)
-
       const waRes = axios
         .request(config)
         .then(response => {
-
           console.log(JSON.stringify(response.data))
         })
         .catch(error => {
@@ -273,28 +268,13 @@ export class RocketChatClient {
       return currentData
     }
     const configs = await this.bp.config.getModuleConfigForBot('channel-rocketchat', event.botId)
-
-    // const confige = await this.bp.http.getAxiosConfigForBot(event.botId, { localUrl: true })
-    // console.log('$$$$$$$$$$$$$$$$$', configs)
-    // console.log('filtered confige', JSON.stringify(confige, null, 2))
-    // const res = await axios.get('/mod/hitlnext/agents', confige)
-    // console.log('hitl agent', JSON.stringify(res.data, null, 2))
-    // console.log('online agent', res.data.some(x => x.online))
-
-    // event.state.onlineAgents = res.data.some(x => x.online)
-    // console.log('##event state##', event.state.temp.onlineAgents)
     return myAction(event)
-    // const msg =  event.payload?.text?.image
-    // this.bp.notifications.create(event.botId, {msg, level: 'info', url: '/modules/hitl' })
   }
 
   // send messages from Botpress to Rocket.Chat
   async handleOutgoingEvent(event: sdk.IO.Event, next: sdk.IO.MiddlewareNextCallback) {
     // sending text
-    //console.log('event.type: ', event.type)
-
     if (event.type === 'typing') {
-      //await this.rtm.sendTyping(event.threadId || event.target)
       await new Promise(resolve => setTimeout(() => resolve(), 1000))
       return next(undefined, false)
     }
@@ -321,7 +301,6 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
   })
 
   async function outgoingHandler(event: sdk.IO.Event, next: sdk.IO.MiddlewareNextCallback) {
-    //console.log('event.channel: ', event.channel)
     if (event.channel !== 'channel-rocketchat') {
       return next()
     }
@@ -336,20 +315,6 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
     console.log('userId...', userId)
 
     const conversationId = event.threadId
-
-
-    // if (conversationId === undefined) {
-    //   const convs = await messaging.listConversations(userId, 1)
-    //   console.log('firstconverstionId...', conversationId)
-    //   if (convs?.length) {
-    //     conversationId = convs[0].id
-    //     console.log('converstionId...', conversationId)
-    //   } else {
-    //     conversationId = (await messaging.createConversation(userId)).id
-    //     console.log('converstionId...', conversationId)
-    //   }
-    // }
-
 
     const client: RocketChatClient = clients[event.botId]
     if (!client) {
