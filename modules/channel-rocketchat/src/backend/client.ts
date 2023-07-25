@@ -123,66 +123,72 @@ export class RocketChatClient {
 
   // send message from Botpress to Rocket.Chat
   async sendMessageToRocketChat(event) {
-    const AuthToken = 'EAAMqZC1mdllcBAELc2tqG8lSqF6ZAZByZBlnTFTOAeNkIt5sUab7Y4C8Q03HoulFhuWrHQGxQNZBWWcZCYuokwiRwU7UXn4ieqqy4whJ6ZCIWoxzCq4tH2ZBCJyHZBXKXacq18UxYa4tx8ZA3AZCEqnXuqPm2J67iyF7dI4rKhsKvZAkjInf5Jw6vnAWWuTP8ufhq8ACsYKJDpf91lUwbod9UcspeH6xXfKLQnsZD'
-    const user_phone_number = '919599379011'
-    const phone_number_id = '114392358180996'
-    const current_version = 'v17.0'
-    const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
 
-    const myAction = async event => {
+    if (event.payload.type) {
 
-      let payload_data: {}
+      const AuthToken = 'Auth'
+      const user_phone_number = '919599379011'
+      const phone_number_id = '114392358180996'
+      const current_version = 'v17.0'
+      const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
+
+      const myAction = async event => {
+
+        let payload_data: {}
 
 
-      if (event.payload.type === 'text') {
-        payload_data = JSON.stringify({
-          'messaging_product': 'whatsapp',
-          'recipient_type': 'individual',
-          'to': `${user_phone_number}`,
-          type: event.payload.type,
-          'text': { 'body': event.payload.text }
-        })
+        if (event.payload.type === 'text') {
+          payload_data = JSON.stringify({
+            'messaging_product': 'whatsapp',
+            'recipient_type': 'individual',
+            'to': `${user_phone_number}`,
+            type: event.payload.type,
+            'text': { 'body': event.payload.text }
+          })
+        }
+
+
+
+        if (event.payload.type === 'image') {
+          payload_data = JSON.stringify({
+            'messaging_product': 'whatsapp',
+            'recipient_type': 'individual',
+            'to': `${user_phone_number}`,
+            type: event.payload.type,
+            'image': { 'link': event.payload.image }
+          })
+        }
+
+        const config = {
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: `${url}`,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization:
+              `Bearer ${AuthToken}`
+          },
+          data: payload_data ? payload_data : ''
+        }
+
+        const waRes = axios
+          .request(config)
+          .then(response => {
+
+            console.log(JSON.stringify(response.data))
+          })
+          .catch(error => {
+            console.log(error)
+          })
+        const currentData = waRes.data
+        return currentData
       }
+      const configs = await this.bp.config.getModuleConfigForBot('channel-rocketchat', event.botId)
 
-
-
-      if (event.payload.type === 'image') {
-        payload_data = JSON.stringify({
-          'messaging_product': 'whatsapp',
-          'recipient_type': 'individual',
-          'to': `${user_phone_number}`,
-          type: event.payload.type,
-          'image': { 'link': event.payload.image }
-        })
-      }
-
-      const config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: `${url}`,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization:
-            `Bearer ${AuthToken}`
-        },
-        data: payload_data
-      }
-
-      const waRes = axios
-        .request(config)
-        .then(response => {
-
-          console.log(JSON.stringify(response.data))
-        })
-        .catch(error => {
-          console.log(error)
-        })
-      const currentData = waRes.data
-      return currentData
+      return myAction(event)
+    } else {
+      console.log('recieveing....')
     }
-    const configs = await this.bp.config.getModuleConfigForBot('channel-rocketchat', event.botId)
-
-    return myAction(event)
   }
 
   // send messages from Botpress to Rocket.Chat

@@ -35,12 +35,14 @@ const onServerReady = async (bp: typeof sdk) => {
       for (const botId of Bots.keys()) {
         botID.push(botId)
       }
-      botID.forEach(async botId => {
+      const mappedBot = [...new Set(botID)]
+      mappedBot.forEach(async botId => {
         const config = (await bp.config.getModuleConfigForBot('channel-rocketchat', botId, true)) as Config
         if (config.enabled) {
           const bot = clients[botId]
           if (bot) {
-            await bot.listen(apiResponse, botId)
+            return bot.listen(apiResponse, botId)
+
           }
         }
       })

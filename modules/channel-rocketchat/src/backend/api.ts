@@ -24,30 +24,10 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   bp.logger.info('router:', router)
   router.use(bodyParser.json())
   const api = async (respThreadId, messages) => {
-    const datas = {
-      name: 'Rhizicube',
-      job: 'AI',
-
-    }
-
-
-    try {
-      const response = await axios({
-        method: 'POST',
-        url: 'https://reqres.in/api/users',
-        data: datas,
-        headers: { 'Content-Type': 'application/json' }
-      })
-      const apiResponse = { ...response.data, threadId: respThreadId, message: messages }
-
-      return apiResponse
-    } catch (error) {
-      console.log('API error:', error)
-      throw error
-    }
-
+    const currentTime = Math.floor(Date.now() / 1000)
+    const apiResponse = { threadId: respThreadId, message: messages, createdAt: currentTime }
+    return apiResponse
   }
-  // )
 
   router.get('/', (req, res) => {
     console.log('/')
@@ -60,17 +40,16 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   })
 
   // Sets server port and logs message on success
-  // app.listen(process.env.PORT || 1337, () => console.log('webhook is listening'))
 
-  router.post('/webhook', (req, res) => {
+  router.post('/webhook', async (req, res) => {
     // Parse the request body from the POST
 
     // Check the Incoming webhook message
-    console.log('whatsapp receiving message...', JSON.stringify(req.body, null, 2))
 
     // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
     if (req.body.object) {
       if (
+
         req.body.entry &&
         req.body.entry[0].changes &&
         req.body.entry[0].changes[0] &&
@@ -81,25 +60,16 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
           req.body.entry[0].changes[0].value.metadata.phone_number_id
         const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
         const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
-
-        const myuuid = uuidv4()
-        const threadID = myuuid + - + from
-
-        router.post(
-          '/listen',
-          asyncMiddleware(async (req: Request, res: Response) => {
-            try {
-              const apiResponse = await api(threadID, msg_body) // Call the API and wait for the response
-              void listenCallback(apiResponse)
-              res.sendStatus(201)
-
-            } catch (error) {
-              console.log('API error:', error)
-              res.sendStatus(500)
-            }
-          })
-        )
-
+        // const myuuid = uuidv4()
+        const threadID = from
+        const dataRec = {
+          'messaging_product': 'whatsapp',
+          'threadId': from,
+          'message': 'msGg_hello'
+        }
+        const apiResponse = await api(threadID, msg_body) // Call the API and wait for the response
+        void listenCallback(apiResponse)
+        // res.sendStatus(201)
 
       }
       res.sendStatus(200)
@@ -139,18 +109,4 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
     }
   })
 
-  router.post(
-    '/listen',
-    asyncMiddleware(async (req: Request, res: Response) => {
-      try {
-        const apiResponse = await api(req.body.threadId, req.body.message) // Call the API and wait for the response
-        void listenCallback(apiResponse)
-        res.sendStatus(201)
-
-      } catch (error) {
-        console.log('API error:', error)
-        res.sendStatus(500)
-      }
-    })
-  )
 }

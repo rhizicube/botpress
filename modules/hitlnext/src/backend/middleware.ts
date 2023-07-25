@@ -30,6 +30,7 @@ const registerMiddleware = async (bp: typeof sdk, state: StateType) => {
 
   const pipeEvent = async (event: sdk.IO.IncomingEvent, eventDestination: sdk.IO.EventDestination) => {
     debug.forBot(event.botId, 'Piping event', eventDestination)
+
     return bp.events.replyToEvent(eventDestination, [event.payload])
   }
 
@@ -93,7 +94,7 @@ const registerMiddleware = async (bp: typeof sdk, state: StateType) => {
     const agent = await repository.getAgent(handoff.agentId)
 
     if (handoff.userChannel === 'web' && agent.attributes) {
-      console.log('incoming web...')
+
       const firstName = agent.attributes.firstname
       const lastname = agent.attributes.lastname
       const avatarUrl = agent.attributes.picture_url
@@ -102,7 +103,7 @@ const registerMiddleware = async (bp: typeof sdk, state: StateType) => {
       _.set(event, 'payload.channel.web.avatarUrl', avatarUrl)
     }
 
-    await pipeEvent(event, {
+    void pipeEvent(event, {
       botId: handoff.botId,
       threadId: handoff.userThreadId,
       target: handoff.userId,
@@ -174,7 +175,6 @@ const registerMiddleware = async (bp: typeof sdk, state: StateType) => {
 
   state.cacheHandoff = await bp.distributed.broadcast(cacheHandoff)
   state.expireHandoff = await bp.distributed.broadcast(expireHandoff)
-
   bp.events.registerMiddleware({
     name: 'hitlnext.incoming',
     direction: 'incoming',
