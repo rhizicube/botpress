@@ -213,122 +213,104 @@ export default async (bp: typeof sdk, state: StateType, repository: Repository) 
     })
   )
 
-  router.post(
-    '/handoffs/:id/assign',
-    agentOnlineMiddleware,
-    (async (req: RequestWithUser, res: Response) => {
-      const { botId } = req.params
-      const { email, strategy } = req.tokenUser!
-      // const { webSessionId } = req.body
+  router.post('/handoffs/:id/assign', agentOnlineMiddleware, async (req: RequestWithUser, res: Response) => {
+    const { botId } = req.params
+    const { email, strategy } = req.tokenUser!
+    // const { webSessionId } = req.body
 
+    const agentId = makeAgentId(strategy, email)
+    const agent = await repository.getCurrentAgent(req as BPRequest, req.params.botId, agentId)
 
-      const agentId = makeAgentId(strategy, email)
-      const agent = await repository.getCurrentAgent(req as BPRequest, req.params.botId, agentId)
+    let handoff = await repository.findHandoff(req.params.botId, req.params.id)
 
+    const userId = await repository.mapVisitor(botId, agentId)
 
-      let handoff = await repository.findHandoff(req.params.botId, req.params.id)
+    const conversation = await bp.messaging.forBot(botId).createConversation(userId)
 
-      const userId = await repository.mapVisitor(botId, agentId)
+    const agentThreadId = conversation.id
 
-      const conversation = await bp.messaging.forBot(botId).createConversation(userId)
+    const payload: Pick<IHandoff, 'agentId' | 'agentThreadId' | 'assignedAt' | 'status'> = {
+      agentId,
+      status: 'assigned',
+      agentThreadId,
+      assignedAt: new Date()
+    }
 
-      const agentThreadId = conversation.id
+    Joi.attempt(payload, AssignHandoffSchema)
+    try {
+      validateHandoffStatusRule(handoff.status, payload.status)
+    } catch (e) {
+      throw new UnprocessableEntityError(formatValidationError(e))
+    }
 
-      const payload: Pick<IHandoff, 'agentId' | 'agentThreadId' | 'assignedAt' | 'status'> = {
-        agentId,
-        status: 'assigned',
-        agentThreadId,
-        assignedAt: new Date()
-      }
+    handoff = await repository.updateHandoff(req.params.botId, req.params.id, payload)
+    state.cacheHandoff(req.params.botId, agentThreadId, handoff)
 
-      Joi.attempt(payload, AssignHandoffSchema)
-      try {
+    const extendSess = await extendAgentSession(repository, realtime, req.params.botId, agentId)
 
-        console.log('HITL is running...................')
+    await extendAgentSession(repository, realtime, req.params.botId, agentId)
 
-        // validateHandoffStatusRule(handoff.status, payload.status)
+    const configs: Config = await bp.config.getModuleConfigForBot(MODULE_NAME, req.params.botId)
 
-      } catch (e) {
-        throw new UnprocessableEntityError(formatValidationError(e))
-      }
-      // repository = new Repository(bp, state.timeouts)
-      // await api(bp, state, repository)
+    if (configs.assignMessage) {
+      const attributes = await bp.users.getAttributes(handoff.userChannel, handoff.userId)
+      const language = attributes.language
 
+      const eventDestination = toEventDestination(req.params.botId, handoff)
 
-      handoff = await repository.updateHandoff(req.params.botId, req.params.id, payload)
-      state.cacheHandoff(req.params.botId, agentThreadId, handoff)
-
-      const extendSess = await extendAgentSession(repository, realtime, req.params.botId, agentId)
-
-      await extendAgentSession(repository, realtime, req.params.botId, agentId)
-
-      const configs: Config = await bp.config.getModuleConfigForBot(MODULE_NAME, req.params.botId)
-
-      if (configs.assignMessage) {
-        const attributes = await bp.users.getAttributes(handoff.userChannel, handoff.userId)
-        const language = attributes.language
-
-        const eventDestination = toEventDestination(req.params.botId, handoff)
-
-
-        const serv = await service.sendMessageToUser(configs.assignMessage, eventDestination, language, {
-          agentName: agentName(agent)
-        })
-
-        await service.sendMessageToUser(configs.assignMessage, eventDestination, language, {
-          agentName: agentName(agent)
-        })
-      }
-
-      // TODO replace this by messaging api once all channels have been ported
-      const recentUserConversationEvents = await bp.events.findEvents(
-        { botId, threadId: handoff.userThreadId },
-        { count: 10, sortOrder: [{ column: 'id', desc: true }] }
-      )
-
-      const baseEvent: Partial<sdk.IO.EventCtorArgs> = {
-        direction: 'outgoing',
-        channel: 'web',
-        botId: handoff.botId,
-        target: userId,
-        threadId: handoff.agentThreadId
-      }
-
-      await Promise.mapSeries(recentUserConversationEvents.reverse(), async event => {
-        await bp.messaging
-          .forBot(handoff.botId)
-          .createMessage(
-            handoff.agentThreadId,
-            event.direction === 'incoming' ? undefined : event.target,
-            event.event.payload
-          )
-        await Bluebird.delay(5)
+      await service.sendMessageToUser(configs.assignMessage, eventDestination, language, {
+        agentName: agentName(agent)
       })
+    }
 
-      await bp.events.sendEvent(
-        bp.IO.Event({
-          ...baseEvent,
-          type: 'custom',
-          payload: {
-            type: 'custom',
-            module: MODULE_NAME,
-            component: 'HandoffAssignedForAgent',
-            noBubble: true,
-            wrapped: { type: 'handoff' }
-          }
-        } as sdk.IO.EventCtorArgs)
-      )
+    // TODO replace this by messaging api once all channels have been ported
+    const recentUserConversationEvents = await bp.events.findEvents(
+      { botId, threadId: handoff.userThreadId },
+      { count: 10, sortOrder: [{ column: 'id', desc: true }] }
+    )
 
-      service.sendPayload(req.params.botId, {
-        resource: 'handoff',
-        type: 'update',
-        id: handoff.id,
-        payload: handoff
-      })
+    const baseEvent: Partial<sdk.IO.EventCtorArgs> = {
+      direction: 'outgoing',
+      channel: 'web',
+      botId: handoff.botId,
+      target: userId,
+      threadId: handoff.agentThreadId
+    }
 
-      res.send(handoff)
+    await Promise.mapSeries(recentUserConversationEvents.reverse(), async event => {
+      await bp.messaging
+        .forBot(handoff.botId)
+        .createMessage(
+          handoff.agentThreadId,
+          event.direction === 'incoming' ? undefined : event.target,
+          event.event.payload
+        )
+      await Bluebird.delay(5)
     })
-  )
+
+    await bp.events.sendEvent(
+      bp.IO.Event({
+        ...baseEvent,
+        type: 'custom',
+        payload: {
+          type: 'custom',
+          module: MODULE_NAME,
+          component: 'HandoffAssignedForAgent',
+          noBubble: true,
+          wrapped: { type: 'handoff' }
+        }
+      } as sdk.IO.EventCtorArgs)
+    )
+
+    service.sendPayload(req.params.botId, {
+      resource: 'handoff',
+      type: 'update',
+      id: handoff.id,
+      payload: handoff
+    })
+
+    res.send(handoff)
+  })
 
   router.post(
     '/handoffs/:id/resolve',

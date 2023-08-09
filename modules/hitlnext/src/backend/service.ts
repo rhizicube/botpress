@@ -99,7 +99,7 @@ class Service {
       { type: 'text', text, event, ...args },
       eventDestination
     )
-    this.bp.events.replyToEvent(eventDestination, message)
+    await this.bp.events.replyToEvent(eventDestination, message)
   }
 
   updateRealtimeHandoff(botId: string, handoff: Partial<IHandoff>) {
