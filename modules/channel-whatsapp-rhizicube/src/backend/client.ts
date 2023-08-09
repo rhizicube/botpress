@@ -25,18 +25,9 @@ const app = express()
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
-export class RocketChatClient {
-  private interactive: any
-  private logger: sdk.Logger
-  private connection: any
-  private user: any
-  private roomList: any
-  private roomsJoined: any
-  private subscribed: any
+export class RhizicubeChatClient {
   private connected: boolean
-
   constructor(private bp: typeof sdk, private botId: string, private config: Config, private router) {
-    this.logger = bp.logger.forBot(botId)
     this.connected = false
   }
 
@@ -74,7 +65,7 @@ export class RocketChatClient {
   async sendMessageToRocketChat(event) {
     if (event.payload.type) {
       const AuthToken = 'Auth'
-      const user_phone_number = 'User call number'
+      const user_phone_number = 'user mobile number'
       const phone_number_id = '114392358180996'
       const current_version = 'v17.0'
       const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
@@ -149,7 +140,7 @@ export class RocketChatClient {
   }
 }
 
-// setup Middleware to send outgoing message from Botpress to Rochet.Chat
+// setup Middleware to send outgoing message from Botpress to Rhizicube.Chat
 export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
   bp.events.registerMiddleware({
     description: 'Sends messages to Rhizicube.chat',
@@ -169,8 +160,8 @@ export async function setupMiddleware(bp: typeof sdk, clients: Clients) {
       enableUrlEncoderBodyParser: false
     })
     const config = (await bp.config.getModuleConfigForBot('channel-whatsapp-rhizicube', event.botId, true)) as Config
-    const bot = new RocketChatClient(bp, event.botId, config, router)
-    const client: RocketChatClient = new RocketChatClient(bp, event.botId, config, router)
+    const bot = new RhizicubeChatClient(bp, event.botId, config, router)
+    const client: RhizicubeChatClient = new RhizicubeChatClient(bp, event.botId, config, router)
     if (!client) {
       return next()
     }

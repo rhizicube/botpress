@@ -2,7 +2,7 @@
 import * as sdk from 'botpress/sdk'
 import { Config } from '../config'
 import api from './api'
-import { setupMiddleware, RocketChatClient } from './client'
+import { setupMiddleware, RhizicubeChatClient } from './client'
 import { Clients } from './typings'
 
 let router
@@ -35,7 +35,7 @@ const onBotMount = async (bp: typeof sdk, botId: string) => {
   })
 
   const config = (await bp.config.getModuleConfigForBot('channel-whatsapp-rhizicube', botId, true)) as Config
-  const bot = new RocketChatClient(bp, botId, config, router)
+  const bot = new RhizicubeChatClient(bp, botId, config, router)
   const listenCallback = async (x: any) => {
     apiResponse = x
     const Bots = await bp.bots.getAllBots()

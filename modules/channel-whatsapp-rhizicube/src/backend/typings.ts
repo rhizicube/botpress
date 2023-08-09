@@ -1,5 +1,5 @@
-import { RocketChatClient } from './client'
+import { RhizicubeChatClient } from './client'
 
 export interface Clients {
-  [key: string]: RocketChatClient
+  [key: string]: RhizicubeChatClient
 }
