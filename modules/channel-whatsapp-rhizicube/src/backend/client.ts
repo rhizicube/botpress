@@ -62,10 +62,10 @@ export class RhizicubeChatClient {
   }
 
   // send message from Botpress to Rhizicube.Chat
-  async sendMessageToRocketChat(event) {
+  async sendMessageToRhizicubeChat(event) {
     if (event.payload.type) {
       const AuthToken = 'Auth'
-      const user_phone_number = 'user mobile number'
+      const user_phone_number = 'user_mobile_number'
       const phone_number_id = '114392358180996'
       const current_version = 'v17.0'
       const url = `https://graph.facebook.com/${current_version}/${phone_number_id}/messages`
@@ -134,7 +134,7 @@ export class RhizicubeChatClient {
     if (!_.includes(outgoingTypes, messageType)) {
       return next(new Error('Unsupported event type: ' + event.type))
     }
-    await this.sendMessageToRocketChat(event)
+    await this.sendMessageToRhizicubeChat(event)
 
     next(undefined, false)
   }

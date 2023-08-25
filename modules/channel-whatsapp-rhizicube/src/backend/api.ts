@@ -41,11 +41,6 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
   // Sets server port and logs message on success
 
   router.post('/webhook', async (req, res) => {
-    // Parse the request body from the POST
-
-    // Check the Incoming webhook message
-
-    // info on WhatsApp text message payload: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples#text-messages
     if (req.body.object) {
       if (
         req.body.entry &&
@@ -55,18 +50,11 @@ export default async (bp: typeof sdk, listenCallback: ListenCallback) => {
         req.body.entry[0].changes[0].value.messages[0]
       ) {
         const phone_number_id = req.body.entry[0].changes[0].value.metadata.phone_number_id
-        const from = req.body.entry[0].changes[0].value.messages[0].from // extract the phone number from the webhook payload
+        const from = req.body.entry[0].changes[0].value.messages[0].from
         const msg_body = req.body.entry[0].changes[0].value.messages[0].text.body
-        // const myuuid = uuidv4()
         const threadID = from
-        const dataRec = {
-          messaging_product: 'whatsapp',
-          threadId: from,
-          message: 'msGg_hello'
-        }
-        const apiResponse = await api(threadID, msg_body) // Call the API and wait for the response
+        const apiResponse = await api(threadID, msg_body)
         void listenCallback(apiResponse)
-        // res.sendStatus(201)
       }
       res.sendStatus(200)
     } else {
