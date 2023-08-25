@@ -72,5 +72,6 @@
       "name": "BP Core DB"
     }
   ],
-  "sqltools.useNodeRuntime": true
+  "sqltools.useNodeRuntime": true,
+  "DockerRun.DisableAutoGenerateConfig": true
 }
